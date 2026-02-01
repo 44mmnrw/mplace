@@ -1,0 +1,545 @@
+/* Catalog Page Styles */
+
+.catalog-page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 32px 16px;
+}
+
+/* Шапка каталога */
+.catalog-header {
+    margin-bottom: 32px;
+}
+
+.catalog-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.catalog-title-block {
+    flex: 1;
+}
+
+.catalog-title {
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 36px;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.catalog-subtitle {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.catalog-sort {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sort-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.sort-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 13px;
+    background: var(--bg-light);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    min-width: 200px;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.sort-select:hover {
+    border-color: var(--border-light);
+}
+
+.catalog-controls {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-filters:hover {
+    background: var(--primary-hover);
+}
+
+/* Основной контент */
+.catalog-content {
+    display: grid;
+    grid-template-columns: 0 1fr;
+    gap: 32px;
+    transition: grid-template-columns 0.4s ease-in-out;
+}
+
+.catalog-content.with-sidebar {
+    grid-template-columns: 288px 1fr;
+}
+
+/* Сайдбар с фильтрами */
+.catalog-sidebar {
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: width 0.4s ease-in-out, opacity 0.4s ease-in-out;
+}
+
+.catalog-sidebar.active {
+    width: 288px;
+    opacity: 1;
+}
+
+.filters-container {
+    background: white;
+    border: 1px solid rgba(61, 57, 53, 0.12);
+    border-radius: 16px;
+    padding: 25px;
+    position: sticky;
+    top: 100px;
+}
+
+.filters-header {
+    margin-bottom: 24px;
+}
+
+.filters-header h3 {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Группа фильтров */
+.filter-group {
+    margin-bottom: 24px;
+}
+
+.filter-title {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+/* Чекбоксы */
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.filter-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    background: var(--bg-light);
+    box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.filter-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    position: relative;
+}
+
+.filter-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Кнопки фильтров */
+.filter-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.theme-grid {
+    grid-template-rows: auto auto auto;
+}
+
+.filter-btn {
+    padding: 6px 13px;
+    background: var(--bg-section);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    text-align: center;
+}
+
+.filter-btn:hover {
+    background: var(--bg-light);
+}
+
+.filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Слайдер цены */
+.price-slider {
+    position: relative;
+    height: 16px;
+    margin-bottom: 16px;
+}
+
+.slider-track {
+    position: absolute;
+    width: 238px;
+    height: 16px;
+    background: var(--primary-color);
+    border-radius: 9999px;
+}
+
+.slider-input {
+    position: absolute;
+    width: 100%;
+    height: 16px;
+    background: transparent;
+    pointer-events: none;
+    -webkit-appearance: none;
+}
+
+.slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--background-secondary);
+    border: 1px solid var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    pointer-events: all;
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 2px 0px rgba(0, 0, 0, 0.1);
+}
+
+.price-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.price-quick-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.btn-reset-filters {
+    width: 100%;
+    padding: 8px 13px;
+    background: var(--bg-section);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-reset-filters:hover {
+    background: var(--bg-light);
+}
+
+/* Карточки мастер-классов */
+.catalog-cards {
+    transition: margin 0.4s ease-in-out;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 48px;
+}
+
+.class-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.class-card {
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.class-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-image {
+    position: relative;
+    width: 100%;
+    padding-bottom: 75%;
+    background: var(--bg-card);
+}
+
+.card-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-hit {
+    background: var(--primary-color);
+    color: white;
+}
+
+.badge-new {
+    background: var(--badge-new);
+    color: var(--badge-new-text);
+}
+
+.badge-discount {
+    background: var(--badge-discount);
+    color: white;
+}
+
+.card-content {
+    padding: 16px;
+}
+
+.card-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.author-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--background-secondary);
+}
+
+.card-author span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    min-height: 48px;
+}
+
+.card-meta {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.card-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rating-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.rating-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.card-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.price-old {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+.price-current {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.card-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tag {
+    padding: 3px 9px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+/* Пагинация */
+.catalog-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 32px;
+}
+
+.pagination-btn {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid rgba(61, 57, 53, 0.12);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.pagination-btn:hover {
+    background: var(--background-secondary);
+}
+
+.pagination-btn.pagination-active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .catalog-content.with-sidebar .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .catalog-header-top {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .catalog-content.with-sidebar {
+        grid-template-columns: 1fr;
+    }
+    
+    .catalog-sidebar.active {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 288px;
+        height: 100vh;
+        background: white;
+        z-index: 1000;
+        overflow-y: auto;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+}
+
+@media (max-width: 768px) {
+    .catalog-page {
+        padding: 16px 8px;
+    }
+    
+    .catalog-title {
+        font-size: 24px;
+        line-height: 28px;
+    }
+    
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
