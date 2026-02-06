@@ -85,7 +85,7 @@ echo.
 
 REM Создание символической ссылки storage
 echo [7/8] Создание символической ссылки для storage...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan storage:link"
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan storage:link --force 2>/dev/null || echo 'Storage link уже существует'"
 echo OK
 echo.
 
