@@ -1,0 +1,9 @@
+/* Front Zone Styles */
+@import '../shared/fonts.css';
+@import '../shared/reset.css';
+@import '../shared/variables.css';
+@import './header.css';
+@import './home.css';
+@import './footer.css';
+@import './catalog.css';
+@import './masterclass-detail.css';

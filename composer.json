@@ -48,6 +48,9 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "dump-schema": [
+            "@php artisan schema:dump --prune"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

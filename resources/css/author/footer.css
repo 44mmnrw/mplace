@@ -1,0 +1,93 @@
+/* Author Admin Footer Styles */
+
+.author-footer {
+    background-color: var(--color-white);
+    border-top: 1px solid rgba(61, 57, 53, 0.08);
+    padding: 25px 32px;
+}
+
+.author-footer__container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 24px;
+    margin: 0 auto;
+    max-width: 1440px;
+}
+
+/* Left Side: Logo + Copyright */
+.author-footer__left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.author-footer__logo-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: #5b95bd;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.author-footer__logo-emoji {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-white);
+}
+
+.author-footer__copyright {
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+    color: #6b7280;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* Right Side: Navigation Links */
+.author-footer__nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.author-footer__link {
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+    color: #6b7280;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.author-footer__link:hover {
+    color: #3d3935;
+}
+
+.author-footer__link:active {
+    color: #5b95bd;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .author-footer {
+        padding: 20px 24px;
+    }
+
+    .author-footer__container {
+        flex-direction: column;
+        height: auto;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .author-footer__nav {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+}

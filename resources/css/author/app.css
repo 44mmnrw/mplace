@@ -1,0 +1,17 @@
+/* Author Admin Zone Styles */
+
+/* Import shared styles */
+@import '../shared/variables.css';
+@import '../shared/reset.css';
+@import '../shared/fonts.css';
+
+/* Author zone specific styles */
+@import './base.css';
+@import './layout.css';
+@import './header.css';
+@import './footer.css';
+
+/* Page specific styles */
+@import './dashboard.css';
+@import './masterclass-editor.css';
+@import './masterclass-list.css';

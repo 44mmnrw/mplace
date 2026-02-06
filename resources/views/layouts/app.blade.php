@@ -8,18 +8,18 @@
     <title>{{ config('app.name', 'РукоДелие') }}</title>
     
     <!-- Styles -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/front/app.css', 'resources/js/front/app.js'])
     
     @stack('styles')
 </head>
 <body>
-    @include('header')
+    @include('front.partials.header')
     
     <main class="main-content">
         @yield('content')
     </main>
     
-    @include('footer')
+    @include('front.partials.footer')
     
     @stack('scripts')
 </body>

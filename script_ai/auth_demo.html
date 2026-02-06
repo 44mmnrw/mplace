@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система авторизации мастеров - Демонстрация</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Onest', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f8fa;
+            padding: 40px 20px;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #3d3935;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 40px;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .demo-section h2 {
+            font-size: 18px;
+            color: #3d3935;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .demo-section p {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .routes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .routes-table th,
+        .routes-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .routes-table th {
+            background-color: #f0f4f7;
+            font-weight: 600;
+            color: #3d3935;
+        }
+
+        .routes-table tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .method.get {
+            background-color: #d4e5f0;
+            color: #5b95bd;
+        }
+
+        .method.post {
+            background-color: #e8d4d4;
+            color: #b8605b;
+        }
+
+        .url {
+            color: #5b95bd;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .features-list li {
+            padding: 8px 0 8px 24px;
+            position: relative;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .features-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #5b95bd;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background-color: #f0f4f7;
+            border-left: 3px solid #5b95bd;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+            color: #3d3935;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .demo-button {
+            padding: 10px 20px;
+            background-color: #5b95bd;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .demo-button:hover {
+            background-color: #4a7a9d;
+            box-shadow: 0 4px 12px rgba(91, 149, 189, 0.3);
+        }
+
+        .demo-button.secondary {
+            background-color: #f0f4f7;
+            color: #5b95bd;
+            border: 1px solid #5b95bd;
+        }
+
+        .demo-button.secondary:hover {
+            background-color: #e8ecf1;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background-color: #d4e5f0;
+            color: #5b95bd;
+            margin: 0 0 15px 0;
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .color-box {
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .color-code {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🔐 Система авторизации для авторов</h1>
+        <p class="subtitle">Реализованная система входа и регистрации для мастеров мастер-классов</p>
+
+        <div class="demo-grid">
+            <!-- Маршруты -->
+            <div class="demo-section">
+                <h2>📍 Маршруты (Routes)</h2>
+                <p>Все маршруты авторизации доступны по префиксу <code class="url">/author/auth/</code></p>
+                <table class="routes-table">
+                    <thead>
+                        <tr>
+                            <th>Метод</th>
+                            <th>URL</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="method get">GET</span></td>
+                            <td class="url">/author/auth/login</td>
+                            <td>Форма входа</td>
+                        </tr>
+                        <tr>
+                            <td><span class="method post">POST</span></td>
+                            <td class="url">/author/auth/login</td>
+                            <td>Обработка входа</td>
+                        </tr>
+                        <tr>
+                            <td><span class="method get">GET</span></td>
+                            <td class="url">/author/auth/register</td>
+                            <td>Форма регистрации</td>
+                        </tr>
+                        <tr>
+                            <td><span class="method post">POST</span></td>
+                            <td class="url">/author/auth/register</td>
+                            <td>Обработка регистрации</td>
+                        </tr>
+                        <tr>
+                            <td><span class="method post">POST</span></td>
+                            <td class="url">/author/auth/logout</td>
+                            <td>Выход из аккаунта</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="button-group">
+                    <a href="http://localhost:8000/author/auth/login" class="demo-button">Открыть Вход</a>
+                    <a href="http://localhost:8000/author/auth/register" class="demo-button">Открыть Регистрацию</a>
+                </div>
+            </div>
+
+            <!-- Страницы -->
+            <div class="demo-section">
+                <h2>📄 Страницы (Views)</h2>
+                <p>Реализованные Blade-шаблоны:</p>
+                <ul class="features-list">
+                    <li><code class="url">author/auth/login.blade.php</code> — форма входа</li>
+                    <li><code class="url">author/auth/register.blade.php</code> — регистрация</li>
+                    <li><code class="url">layouts/auth.blade.php</code> — базовый layout</li>
+                </ul>
+                <p style="margin-top: 15px;">Все компоненты:</p>
+                <ul class="features-list">
+                    <li>Градиентный фон</li>
+                    <li>Центрированная карточка</li>
+                    <li>Логотип бренда</li>
+                    <li>Поля ввода с иконками</li>
+                    <li>Кнопка отправки</li>
+                    <li>Ссылки навигации</li>
+                </ul>
+            </div>
+
+            <!-- Функциональность -->
+            <div class="demo-section">
+                <h2>⚙️ Функциональность</h2>
+                <p><span class="status-badge">✓ Реализовано</span></p>
+                <ul class="features-list">
+                    <li>Валидация полей на сервере</li>
+                    <li>CSRF защита (@csrf токен)</li>
+                    <li>Показ/скрытие пароля</li>
+                    <li>Переход между входом и регистрацией</li>
+                    <li>Вывод ошибок валидации</li>
+                    <li>Чекбокс "Запомнить меня"</li>
+                    <li>Адаптивный дизайн</li>
+                </ul>
+            </div>
+
+            <!-- CSS-переменные -->
+            <div class="demo-section">
+                <h2>🎨 Цветовая схема</h2>
+                <div class="colors-grid">
+                    <div class="color-box" style="background-color: #5b95bd;">
+                        Primary
+                        <div class="color-code">#5b95bd</div>
+                    </div>
+                    <div class="color-box" style="background-color: #4a7a9d;">
+                        Hover
+                        <div class="color-code">#4a7a9d</div>
+                    </div>
+                    <div class="color-box" style="background-color: #3d3935; color: white;">
+                        Text
+                        <div class="color-code">#3d3935</div>
+                    </div>
+                    <div class="color-box" style="background-color: #6b7280;">
+                        Secondary
+                        <div class="color-code">#6b7280</div>
+                    </div>
+                    <div class="color-box" style="background-color: #f0f4f7; color: #3d3935; border: 1px solid #e5e5e5;">
+                        Input BG
+                        <div class="color-code">#f0f4f7</div>
+                    </div>
+                    <div class="color-box" style="background-color: #ffffff; color: #3d3935; border: 1px solid #e5e5e5;">
+                        Card BG
+                        <div class="color-code">#ffffff</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Файлы -->
+            <div class="demo-section">
+                <h2>📁 Структура файлов</h2>
+                <div class="code-block">app/Http/Controllers/Author/AuthController.php
+resources/views/author/auth/login.blade.php
+resources/views/author/auth/register.blade.php
+resources/views/layouts/auth.blade.php
+resources/css/author/auth.css
+                </div>
+                <p style="margin-top: 15px;">Контроллер: <code class="url">AuthController</code></p>
+                <p>Методы:</p>
+                <ul class="features-list">
+                    <li><code>showLogin()</code> — показать форму входа</li>
+                    <li><code>login()</code> — обработка входа</li>
+                    <li><code>showRegister()</code> — показать регистрацию</li>
+                    <li><code>register()</code> — обработка регистрации</li>
+                    <li><code>logout()</code> — выход</li>
+                </ul>
+            </div>
+
+            <!-- TODO -->
+            <div class="demo-section">
+                <h2>📋 TODO (Следующие шаги)</h2>
+                <p><span class="status-badge">⏳ В разработке</span></p>
+                <ul class="features-list">
+                    <li>Интеграция с Laravel Guard</li>
+                    <li>Хеширование пароля (Hash::make)</li>
+                    <li>Создание User модели</li>
+                    <li>Управление сеансами</li>
+                    <li>Email верификация</li>
+                    <li>"Забыли пароль?" функционал</li>
+                    <li>Социальная аутентификация</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Рекомендация:</strong> Установить Laravel Breeze для готовой системы аутентификации</p>
+            </div>
+
+            <!-- Технологии -->
+            <div class="demo-section">
+                <h2>🛠️ Технологии</h2>
+                <div class="code-block">Laravel 12 (Blade)
+CSS3 (Модульная архитектура)
+HTML5 (Семантическая разметка)
+SVG (Иконки)
+PHP 8.2+
+                </div>
+                <p style="margin-top: 15px;">Использованные подходы:</p>
+                <ul class="features-list">
+                    <li>BEM-подобное именование классов</li>
+                    <li>CSS-переменные из shared/variables.css</li>
+                    <li>Flex-макеты для позиционирования</li>
+                    <li>@media queries для адаптивности</li>
+                    <li>Переходы и анимации CSS</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Секция тестирования -->
+        <div style="margin-top: 40px; padding: 20px; background: #f0f4f7; border-radius: 12px; border-left: 4px solid #5b95bd;">
+            <h2 style="color: #3d3935; margin-bottom: 15px;">🧪 Быстрое тестирование</h2>
+            <p style="color: #6b7280; margin-bottom: 15px;">Откройте страницы и проверьте функциональность:</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <a href="http://localhost:8000/author/auth/login" class="demo-button">🔑 Страница входа</a>
+                <a href="http://localhost:8000/author/auth/register" class="demo-button">✍️ Страница регистрации</a>
+                <a href="http://localhost:8000/" class="demo-button secondary">← На главную</a>
+            </div>
+        </div>
+
+        <!-- Подвал -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e5e5; text-align: center; color: #6b7280; font-size: 13px;">
+            <p>MPlace — Маркетплейс мастер-классов по рукоделию на Laravel 12 + Vite</p>
+            <p style="margin-top: 8px;">📚 <a href="../../script_ai/AUTH_IMPLEMENTATION.md" style="color: #5b95bd; text-decoration: none;">Документация</a> | 🎨 Дизайн из Figma</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест выравнивания кнопок</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            line-height: 1.5;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f0f0f0;
+            border: 2px solid #333;
+        }
+        
+        .test-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        /* Базовые стили кнопок из base.css */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            line-height: 1;
+            margin: 0;
+        }
+        
+        /* Стили из header.css */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 24px;
+            background: #e0e0e0;
+            padding: 10px;
+        }
+        
+        .header-nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #d0d0d0;
+            padding: 5px;
+        }
+        
+        .header .btn {
+            height: 44px;
+            padding: 12px 24px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-secondary {
+            background: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        
+        .btn-primary {
+            background: #5b95bd;
+            color: white;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тест выравнивания кнопок</h1>
+    
+    <div class="test-section">
+        <h2>Тест 1: Текущая структура (каждая кнопка в своем div)</h2>
+        <div class="header-actions">
+            <div class="header-nav-right">
+                <a href="#" class="btn btn-secondary">Войти</a>
+            </div>
+            <div class="header-nav-right">
+                <a href="#" class="btn btn-primary">Стать автором</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Тест 2: Обе кнопки в одном div</h2>
+        <div class="header-actions">
+            <div class="header-nav-right">
+                <a href="#" class="btn btn-secondary">Войти</a>
+                <a href="#" class="btn btn-primary">Стать автором</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Тест 3: Кнопки без обертки</h2>
+        <div class="header-actions">
+            <a href="#" class="btn btn-secondary">Войти</a>
+            <a href="#" class="btn btn-primary">Стать автором</a>
+        </div>
+    </div>
+    
+    <script>
+        // Замеряем высоты и позиции
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.test-section').forEach((section, index) => {
+                const buttons = section.querySelectorAll('.btn');
+                console.log(`\n=== Тест ${index + 1} ===`);
+                buttons.forEach((btn, i) => {
+                    const rect = btn.getBoundingClientRect();
+                    const computed = window.getComputedStyle(btn);
+                    console.log(`Кнопка ${i + 1}:`);
+                    console.log(`  top: ${rect.top}`);
+                    console.log(`  height: ${rect.height}`);
+                    console.log(`  margin: ${computed.margin}`);
+                    console.log(`  line-height: ${computed.lineHeight}`);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

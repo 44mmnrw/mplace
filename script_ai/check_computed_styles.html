@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Проверка стилей кнопок</title>
+    <link rel="stylesheet" href="../public/build/assets/app.css">
+    <style>
+        body {
+            padding: 40px;
+            font-family: monospace;
+        }
+        .test-container {
+            border: 2px solid red;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Проверка стилей кнопок хедера</h1>
+    
+    <div class="test-container">
+        <h2>Тест кнопок:</h2>
+        <a href="#" class="btn btn-secondary">Войти</a>
+        <a href="#" class="btn btn-primary">Стать автором</a>
+    </div>
+
+    <div class="info">
+        <h3>Инструкция:</h3>
+        <ol>
+            <li>Откройте DevTools (F12)</li>
+            <li>Выберите кнопку "Войти"</li>
+            <li>Посмотрите в Computed стили значение margin-bottom</li>
+            <li>Посмотрите в Styles откуда идет это значение</li>
+        </ol>
+    </div>
+
+    <script>
+        // Получаем computed styles для кнопок
+        window.addEventListener('DOMContentLoaded', () => {
+            const btnSecondary = document.querySelector('.btn-secondary');
+            const btnPrimary = document.querySelector('.btn-primary');
+            
+            const stylesSecondary = window.getComputedStyle(btnSecondary);
+            const stylesPrimary = window.getComputedStyle(btnPrimary);
+            
+            console.log('=== btn-secondary ===');
+            console.log('margin:', stylesSecondary.margin);
+            console.log('margin-bottom:', stylesSecondary.marginBottom);
+            console.log('display:', stylesSecondary.display);
+            console.log('height:', stylesSecondary.height);
+            
+            console.log('\n=== btn-primary ===');
+            console.log('margin:', stylesPrimary.margin);
+            console.log('margin-bottom:', stylesPrimary.marginBottom);
+            console.log('display:', stylesPrimary.display);
+            console.log('height:', stylesPrimary.height);
+            
+            // Добавляем на страницу
+            const info = document.createElement('div');
+            info.className = 'info';
+            info.innerHTML = `
+                <h3>Computed Styles:</h3>
+                <h4>btn-secondary:</h4>
+                <pre>margin: ${stylesSecondary.margin}
+margin-bottom: ${stylesSecondary.marginBottom}
+display: ${stylesSecondary.display}
+height: ${stylesSecondary.height}</pre>
+                
+                <h4>btn-primary:</h4>
+                <pre>margin: ${stylesPrimary.margin}
+margin-bottom: ${stylesPrimary.marginBottom}
+display: ${stylesPrimary.display}
+height: ${stylesPrimary.height}</pre>
+            `;
+            document.body.appendChild(info);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1487 @@
+// mplace Database Schema
+// For dbdiagram.io - https://dbdiagram.io/
+// Маркетплейс мастер-классов по рукоделию
+// Синхронизировано с mysql-schema.sql от 2026-02-05
+
+Project mplace {
+  database_type: 'MySQL'
+  Note: 'База данных маркетплейса мастер-классов на Laravel 12'
+}
+
+// ============================================
+// ПОЛЬЗОВАТЕЛИ И АУТЕНТИФИКАЦИЯ
+// ============================================
+
+Table users {
+  id bigint [pk, increment]
+  first_name varchar(255) [not null]
+  last_name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  phone varchar(20) [null]
+  avatar varchar(255) [null]
+  email_verified_at timestamp [null]
+  password varchar(255) [not null]
+  remember_token varchar(100) [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: 'Базовая таблица пользователей Laravel'
+}
+
+Table password_reset_tokens {
+  email varchar(255) [pk]
+  token varchar(255) [not null]
+  created_at timestamp [null]
+  
+  Note: 'Токены для сброса пароля'
+}
+
+Table sessions {
+  id varchar(255) [pk]
+  user_id bigint [null]
+  ip_address varchar(45) [null]
+  user_agent varchar(500) [null]
+  payload longtext [not null]
+  last_activity int [not null]
+  
+  indexes {
+    user_id
+    last_activity
+  }
+  
+  Note: 'Сессии пользователей Laravel'
+}
+
+Table user_roles {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+  }
+  
+  Note: 'Роли: customer, seller, author, admin, support'
+}
+
+Table user_user_role {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  role_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    role_id
+    (user_id, role_id) [unique]
+  }
+  
+  Note: 'Связь пользователей с ролями'
+}
+
+// ============================================
+// КАТЕГОРИИ
+// ============================================
+
+Table categories {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  icon varchar(255) [null]
+  image varchar(255) [null]
+  parent_id bigint [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    slug
+    parent_id
+    (is_active, sort_order)
+  }
+  
+  Note: 'Иерархические категории товаров'
+}
+
+Table category_relations {
+  id bigint [pk, increment]
+  child_id bigint [not null]
+  parent_id bigint [not null]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    child_id
+    parent_id
+    (child_id, parent_id) [unique]
+  }
+  
+  Note: 'Связи категорий (many-to-many)'
+}
+
+// ============================================
+// АВТОРЫ
+// ============================================
+
+Table authors {
+  id bigint [pk, increment]
+  user_id bigint [unique, not null]
+  display_name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  about text [null]
+  social_links json [null]
+  masterclasses_count int [default: 0]
+  author_rating decimal(3,2) [default: 0.00]
+  author_reviews_count int [default: 0]
+  is_verified boolean [default: false]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    slug
+    is_active
+    is_verified
+    author_rating
+  }
+  
+  Note: 'Профили авторов мастер-классов'
+}
+
+Table author_addresses {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  type varchar(20) [not null, default: 'legal']
+  is_default boolean [default: false]
+  country varchar(100) [not null, default: 'Россия']
+  region varchar(100) [null]
+  city varchar(100) [not null]
+  street varchar(255) [null]
+  building varchar(50) [null]
+  apartment varchar(20) [null]
+  postal_code varchar(20) [null]
+  contact_name varchar(255) [null]
+  contact_phone varchar(20) [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    author_id
+    (author_id, type)
+    (author_id, is_default)
+  }
+  
+  Note: 'Адреса авторов'
+}
+
+Table author_tax_info {
+  id bigint [pk, increment]
+  author_id bigint [unique, not null]
+  taxpayer_type varchar(30) [not null]
+  inn varchar(12) [not null]
+  npd_registration_date date [null]
+  npd_status_verified boolean [default: false]
+  npd_status_verified_at timestamp [null]
+  npd_status_active boolean [null]
+  ogrnip varchar(15) [null]
+  ip_registration_date date [null]
+  company_name varchar(255) [null]
+  company_short_name varchar(100) [null]
+  kpp varchar(9) [null]
+  ogrn varchar(13) [null]
+  legal_address text [null]
+  ceo_name varchar(255) [null]
+  ceo_position varchar(100) [null]
+  bank_name varchar(255) [null]
+  bank_bik varchar(9) [null]
+  bank_account varchar(20) [null]
+  bank_corr_account varchar(20) [null]
+  bank_recipient_name varchar(255) [null]
+  is_verified boolean [default: false]
+  verified_at timestamp [null]
+  verified_by bigint [null]
+  verification_documents json [null]
+  verification_notes text [null]
+  contract_number varchar(50) [null]
+  contract_date date [null]
+  contract_file varchar(255) [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    author_id
+    inn
+    taxpayer_type
+    is_verified
+    npd_status_active
+    verified_by
+  }
+  
+  Note: 'Налоговая информация авторов'
+}
+
+// ============================================
+// УРОВНИ СЛОЖНОСТИ
+// ============================================
+
+Table difficulty_levels {
+  id bigint [pk, increment]
+  name varchar(50) [not null]
+  slug varchar(50) [unique, not null]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+  }
+}
+
+// ============================================
+// АТРИБУТЫ (EAV)
+// ============================================
+
+Table attributes {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  type enum('text','textarea','number','select','multiselect','checkbox','date','color','file') [not null, default: 'text']
+  unit varchar(255) [null]
+  is_global boolean [default: false]
+  is_required boolean [default: false]
+  is_filterable boolean [default: true]
+  is_comparable boolean [default: false]
+  is_visible boolean [default: true]
+  sort_order int [default: 0]
+  validation_rules json [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    type
+    is_global
+    (is_filterable, sort_order)
+  }
+}
+
+Table attribute_options {
+  id bigint [pk, increment]
+  attribute_id bigint [not null]
+  value varchar(255) [not null]
+  label varchar(255) [not null]
+  color varchar(255) [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    attribute_id
+    (attribute_id, sort_order)
+  }
+}
+
+Table category_attribute {
+  id bigint [pk, increment]
+  category_id bigint [not null]
+  attribute_id bigint [not null]
+  is_required boolean [null]
+  sort_order int [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    category_id
+    attribute_id
+    (category_id, attribute_id) [unique]
+  }
+}
+
+// ============================================
+// ТОВАРЫ
+// ============================================
+
+Table products {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  primary_category_id bigint [not null]
+  difficulty_level_id bigint [null]
+  title varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  sku varchar(100) [unique, null]
+  short_description varchar(500) [null]
+  description text [not null]
+  format varchar(50) [null]
+  language varchar(10) [not null, default: 'ru']
+  materials json [null]
+  requirements json [null]
+  what_you_learn json [null]
+  auto_delivery boolean [default: false]
+  delivery_instructions text [null]
+  status varchar(50) [default: 'draft']
+  is_active boolean [default: true]
+  is_featured boolean [default: false]
+  is_digital boolean [default: true]
+  views_count int [default: 0]
+  sales_count int [default: 0]
+  rating decimal(3,2) [default: 0.00]
+  reviews_count int [default: 0]
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  published_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    author_id
+    primary_category_id
+    difficulty_level_id
+    slug
+    sku
+    status
+    (is_active, is_featured)
+    rating
+    sales_count
+    created_at
+  }
+  
+  Note: 'Товары/услуги (мастер-классы, курсы)'
+}
+
+Table product_categories {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  category_id bigint [not null]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    (product_id, category_id) [unique]
+    category_id
+  }
+}
+
+Table product_prices {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  price decimal(10,2) [not null]
+  old_price decimal(10,2) [null]
+  currency varchar(3) [default: 'RUB']
+  valid_from timestamp [null]
+  valid_to timestamp [null]
+  is_active boolean [default: true]
+  note text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    (product_id, is_active)
+    (valid_from, valid_to)
+  }
+}
+
+Table product_images {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  image_path varchar(500) [not null]
+  title varchar(255) [null]
+  is_main boolean [default: false]
+  sort_order int [default: 0]
+  alt_text varchar(255) [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    (product_id, is_main)
+    (product_id, sort_order)
+  }
+}
+
+Table product_files {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  file_path varchar(500) [not null]
+  file_name varchar(255) [not null]
+  file_size bigint [not null]
+  file_type varchar(50) [not null]
+  is_preview boolean [default: false]
+  is_active boolean [default: true]
+  sort_order int [default: 0]
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    (product_id, is_active)
+    (product_id, is_preview)
+  }
+}
+
+Table product_attribute_values {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  attribute_id bigint [not null]
+  value_text text [null]
+  value text [null]
+  value_int int [null]
+  value_decimal decimal(10,2) [null]
+  value_date datetime [null]
+  value_boolean boolean [null]
+  option_id bigint [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    attribute_id
+    (product_id, attribute_id) [unique]
+    option_id
+    value_int
+    value_decimal
+  }
+}
+
+// ============================================
+// АКТИВНОСТЬ
+// ============================================
+
+Table activity_logs {
+  id bigint [pk, increment]
+  user_id bigint [null]
+  action varchar(100) [not null]
+  subject_type varchar(50) [null]
+  subject_id bigint [null]
+  properties json [null]
+  ip_address varchar(45) [null]
+  user_agent varchar(500) [null]
+  url varchar(500) [null]
+  method varchar(10) [null]
+  extra json [null]
+  created_at timestamp [not null]
+  
+  indexes {
+    user_id
+    action
+    (subject_type, subject_id)
+    (user_id, action)
+    (user_id, created_at)
+    ip_address
+    created_at
+  }
+}
+
+// ============================================
+// КОРЗИНА
+// ============================================
+
+Table carts {
+  id bigint [pk, increment]
+  user_id bigint [null]
+  session_id varchar(255) [null]
+  coupon_code varchar(50) [null]
+  expires_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    session_id
+    expires_at
+  }
+}
+
+Table cart_items {
+  id bigint [pk, increment]
+  cart_id bigint [not null]
+  product_id bigint [not null]
+  quantity int [default: 1]
+  price_at_add decimal(10,2) [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    cart_id
+    product_id
+    (cart_id, product_id) [unique]
+  }
+}
+
+// ============================================
+// ЗАКАЗЫ И ПЛАТЕЖИ
+// ============================================
+
+Table order_statuses {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  description text [null]
+  color varchar(20) [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    sort_order
+  }
+}
+
+Table payment_statuses {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  description text [null]
+  color varchar(20) [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    sort_order
+  }
+}
+
+Table orders {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  order_number varchar(50) [unique, not null]
+  subtotal decimal(10,2) [not null]
+  tax decimal(10,2) [default: 0.00]
+  shipping decimal(10,2) [default: 0.00]
+  discount decimal(10,2) [default: 0.00]
+  total decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  order_status_id bigint [null]
+  payment_status_id bigint [null]
+  payment_method varchar(50) [null]
+  payment_transaction_id varchar(255) [null]
+  paid_at timestamp [null]
+  shipping_address json [null]
+  billing_address json [null]
+  customer_notes text [null]
+  admin_notes text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    order_number
+    order_status_id
+    payment_status_id
+    (user_id, order_status_id)
+    created_at
+  }
+}
+
+Table order_items {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  product_id bigint [not null]
+  shop_id bigint [not null]
+  product_title varchar(255) [not null]
+  price decimal(10,2) [not null]
+  quantity int [default: 1]
+  subtotal decimal(10,2) [not null]
+  commission_rate decimal(5,2) [not null]
+  commission_amount decimal(10,2) [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table order_item_access {
+  id bigint [pk, increment]
+  order_item_id bigint [not null]
+  product_file_id bigint [not null]
+  status varchar(50) [default: 'pending']
+  confirmed_by bigint [null]
+  confirmed_at timestamp [null]
+  confirmation_notes text [null]
+  download_token varchar(255) [null]
+  token_expires_at timestamp [null]
+  downloads_count int [default: 0]
+  max_downloads int [default: 10]
+  access_expires_at timestamp [null]
+  first_downloaded_at timestamp [null]
+  last_downloaded_at timestamp [null]
+  download_ips json [null]
+  revocation_reason text [null]
+  revoked_by bigint [null]
+  revoked_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table payments {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  payment_status_id bigint [not null]
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  payment_method varchar(50) [not null]
+  payment_gateway varchar(50) [not null]
+  transaction_id varchar(255) [unique, null]
+  gateway_response json [null]
+  paid_at timestamp [null]
+  failed_at timestamp [null]
+  refunded_at timestamp [null]
+  failure_reason text [null]
+  refund_reason text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    payment_status_id
+    transaction_id
+    payment_gateway
+    (order_id, payment_status_id)
+    created_at
+  }
+}
+
+Table refunds {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  payment_id bigint [not null]
+  order_item_id bigint [null]
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  reason varchar(100) [not null]
+  description text [null]
+  status varchar(50) [default: 'pending']
+  requested_by bigint [not null]
+  reviewed_by bigint [null]
+  reviewed_at timestamp [null]
+  rejection_reason text [null]
+  transaction_id varchar(255) [null]
+  gateway_response json [null]
+  refunded_at timestamp [null]
+  seller_balance_adjusted boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    payment_id
+    order_item_id
+    status
+    requested_by
+    reviewed_by
+    (order_id, status)
+    created_at
+  }
+}
+
+// ============================================
+// ФИНАНСЫ ПРОДАВЦОВ
+// ============================================
+
+Table seller_balances {
+  id bigint [pk, increment]
+  user_id bigint [unique, not null]
+  available_balance decimal(10,2) [default: 0.00]
+  pending_balance decimal(10,2) [default: 0.00]
+  total_earned decimal(10,2) [default: 0.00]
+  total_withdrawn decimal(10,2) [default: 0.00]
+  hold_days int [default: 7]
+  last_payout_at timestamp [null]
+  next_payout_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+  }
+}
+
+Table seller_transactions {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  order_id bigint [null]
+  payout_id bigint [null]
+  type varchar(50) [not null]
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  description text [null]
+  balance_before decimal(10,2) [not null]
+  balance_after decimal(10,2) [not null]
+  available_at timestamp [null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    user_id
+    order_id
+    payout_id
+    type
+    created_at
+  }
+}
+
+Table seller_payouts {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  payout_method varchar(50) [not null]
+  payout_details json [not null]
+  status varchar(50) [default: 'pending']
+  processed_at timestamp [null]
+  processed_by bigint [null]
+  transaction_id varchar(255) [null]
+  gateway_response json [null]
+  rejection_reason text [null]
+  fee_amount decimal(10,2) [default: 0.00]
+  notes text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    status
+    (user_id, status)
+    (status, created_at)
+    created_at
+    processed_at
+    processed_by
+  }
+}
+
+// ============================================
+// КУПОНЫ
+// ============================================
+
+Table coupons {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  code varchar(50) [unique, not null]
+  name varchar(255) [not null]
+  description text [null]
+  discount_type varchar(20) [not null]
+  discount_value decimal(10,2) [not null]
+  min_purchase_amount decimal(10,2) [null]
+  max_discount_amount decimal(10,2) [null]
+  valid_from timestamp [null]
+  valid_to timestamp [null]
+  usage_limit int [null]
+  usage_limit_per_user int [default: 1]
+  used_count int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    author_id
+    code
+    is_active
+    (is_active, valid_from, valid_to)
+    created_at
+  }
+}
+
+Table coupon_categories {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  category_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    coupon_id
+    category_id
+    (coupon_id, category_id) [unique]
+  }
+}
+
+Table coupon_products {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  product_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    coupon_id
+    product_id
+    (coupon_id, product_id) [unique]
+  }
+}
+
+Table coupon_usage {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  user_id bigint [not null]
+  order_id bigint [not null]
+  discount_amount decimal(10,2) [not null]
+  created_at timestamp [not null]
+}
+
+// ============================================
+// ОТЗЫВЫ
+// ============================================
+
+Table reviews {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  reviewable_type varchar(50) [not null]
+  reviewable_id bigint [not null]
+  order_id bigint [null]
+  rating tinyint [not null]
+  comment text [null]
+  status varchar(20) [default: 'pending']
+  is_verified_purchase boolean [default: false]
+  helpful_count int [default: 0]
+  seller_response text [null]
+  seller_response_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    (reviewable_type, reviewable_id)
+  }
+}
+
+// ============================================
+// ОБЩЕНИЕ
+// ============================================
+
+Table conversations {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  buyer_id bigint [not null]
+  seller_id bigint [not null]
+  product_id bigint [null]
+  subject varchar(255) [not null]
+  status varchar(50) [default: 'open']
+  last_message_at timestamp [null]
+  last_message_by bigint [null]
+  unread_count_buyer int [default: 0]
+  unread_count_seller int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    buyer_id
+    seller_id
+    product_id
+    status
+    (buyer_id, status)
+    (seller_id, status)
+    last_message_at
+    last_message_by
+  }
+}
+
+Table messages {
+  id bigint [pk, increment]
+  conversation_id bigint [not null]
+  sender_id bigint [not null]
+  message text [not null]
+  attachments json [null]
+  read_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    conversation_id
+    sender_id
+    (conversation_id, created_at)
+    read_at
+  }
+}
+
+Table tickets {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  order_id bigint [null]
+  subject varchar(255) [not null]
+  description text [not null]
+  category varchar(100) [null]
+  priority varchar(50) [default: 'medium']
+  status varchar(50) [default: 'new']
+  assigned_to bigint [null]
+  assigned_at timestamp [null]
+  first_response_at timestamp [null]
+  resolved_at timestamp [null]
+  closed_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    order_id
+    status
+    priority
+    assigned_to
+    (status, priority)
+    (assigned_to, status)
+    created_at
+  }
+}
+
+Table ticket_messages {
+  id bigint [pk, increment]
+  ticket_id bigint [not null]
+  user_id bigint [not null]
+  message text [not null]
+  attachments json [null]
+  is_staff_reply boolean [default: false]
+  is_internal_note boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    ticket_id
+    user_id
+    (ticket_id, created_at)
+    is_staff_reply
+  }
+}
+
+// ============================================
+// БЛОГ
+// ============================================
+
+Table blog_categories {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    sort_order
+  }
+}
+
+Table tags {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  usage_count int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    usage_count
+  }
+}
+
+Table blog_posts {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  title varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  excerpt text [null]
+  content longtext [not null]
+  featured_image varchar(255) [null]
+  status varchar(50) [default: 'draft']
+  is_featured boolean [default: false]
+  views_count int [default: 0]
+  likes_count int [default: 0]
+  comments_count int [default: 0]
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  published_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    author_id
+    slug
+    status
+    (status, published_at)
+    is_featured
+    views_count
+    created_at
+  }
+}
+
+Table blog_post_categories {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  category_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table blog_post_tag {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  tag_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    post_id
+    tag_id
+    (post_id, tag_id) [unique]
+  }
+}
+
+Table blog_comments {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  user_id bigint [not null]
+  parent_id bigint [null]
+  comment text [not null]
+  status varchar(20) [default: 'pending']
+  likes_count int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    post_id
+    user_id
+    parent_id
+    status
+    (post_id, status)
+    created_at
+  }
+}
+
+// ============================================
+// ПОДПИСКИ И УВЕДОМЛЕНИЯ
+// ============================================
+
+Table follows {
+  id bigint [pk, increment]
+  follower_user_id bigint [not null]
+  followable_type varchar(50) [not null]
+  followable_id bigint [not null]
+  notify_new_products boolean [default: true]
+  notify_sales boolean [default: true]
+  notify_blog_posts boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    follower_user_id
+    (followable_type, followable_id)
+    created_at
+  }
+}
+
+Table notifications {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  type varchar(100) [not null]
+  notifiable_type varchar(50) [null]
+  notifiable_id bigint [null]
+  title varchar(255) [not null]
+  message text [null]
+  data json [null]
+  channels json [null]
+  read_at timestamp [null]
+  email_sent_at timestamp [null]
+  push_sent_at timestamp [null]
+  created_at timestamp [not null]
+  
+  indexes {
+    user_id
+    (user_id, read_at)
+    type
+    (notifiable_type, notifiable_id)
+    created_at
+  }
+}
+
+Table notification_settings {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  notification_type varchar(100) [not null]
+  email_enabled boolean [default: true]
+  push_enabled boolean [default: true]
+  database_enabled boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    (user_id, notification_type) [unique]
+  }
+}
+
+Table newsletters {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  subject varchar(255) [not null]
+  preheader varchar(255) [null]
+  content_html longtext [not null]
+  content_text text [null]
+  sender_name varchar(255) [not null]
+  sender_email varchar(255) [not null]
+  reply_to varchar(255) [null]
+  scheduled_at timestamp [null]
+  sent_at timestamp [null]
+  status varchar(50) [default: 'active']
+  segment_id bigint [null]
+  recipients_count int [default: 0]
+  sent_count int [default: 0]
+  opened_count int [default: 0]
+  clicked_count int [default: 0]
+  bounced_count int [default: 0]
+  unsubscribed_count int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    status
+    segment_id
+  }
+}
+
+Table newsletter_segments {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  description text [null]
+  conditions json [not null]
+  users_count int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    name
+  }
+}
+
+Table newsletter_sends {
+  id bigint [pk, increment]
+  newsletter_id bigint [not null]
+  user_id bigint [not null]
+  status varchar(50) [default: 'pending']
+  sent_at timestamp [null]
+  opened_at timestamp [null]
+  clicked_at timestamp [null]
+  bounced_at timestamp [null]
+  unsubscribed_at timestamp [null]
+  opens_count int [default: 0]
+  clicks_count int [default: 0]
+  error_message text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    newsletter_id
+    user_id
+    status
+    (newsletter_id, user_id)
+    sent_at
+  }
+}
+
+// ============================================
+// КЛИЕНТЫ
+// ============================================
+
+Table customers {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  preferred_language varchar(10) [default: 'ru']
+  preferred_currency varchar(3) [default: 'RUB']
+  newsletter_subscribed boolean [default: true]
+  sms_notifications boolean [default: false]
+  email_notifications boolean [default: true]
+  orders_count int [default: 0]
+  total_spent decimal(10,2) [default: 0.00]
+  customer_rating decimal(3,2) [default: 0.00]
+  customer_reviews_count int [default: 0]
+  loyalty_points int [default: 0]
+  loyalty_level varchar(50) [default: 'bronze']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    loyalty_level
+    orders_count
+    customer_rating
+  }
+}
+
+Table wishlists {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  product_id bigint [not null]
+  priority tinyint [default: 0]
+  notes text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    product_id
+    (user_id, product_id) [unique]
+    (user_id, priority)
+  }
+}
+
+// ============================================
+// МОДЕРАЦИЯ
+// ============================================
+
+Table reports {
+  id bigint [pk, increment]
+  reporter_user_id bigint [not null]
+  reportable_type varchar(50) [not null]
+  reportable_id bigint [not null]
+  reason varchar(100) [not null]
+  description text [null]
+  status varchar(50) [default: 'pending']
+  reviewed_by bigint [null]
+  reviewed_at timestamp [null]
+  resolution text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    reporter_user_id
+    (reportable_type, reportable_id)
+    status
+    reviewed_by
+    (status, created_at)
+    created_at
+  }
+}
+
+// ============================================
+// НПД
+// ============================================
+
+Table npd_receipts {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  payout_id bigint [null]
+  order_id bigint [null]
+  receipt_id varchar(50) [null]
+  receipt_uuid varchar(100) [null]
+  receipt_link varchar(500) [null]
+  receipt_file varchar(255) [null]
+  amount decimal(10,2) [not null]
+  service_name varchar(255) [not null]
+  status varchar(50) [default: 'pending']
+  created_by varchar(20) [not null]
+  error_code varchar(50) [null]
+  error_message text [null]
+  receipt_date date [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    author_id
+  }
+}
+
+// ============================================
+// СИСТЕМНЫЕ ТАБЛИЦЫ LARAVEL
+// ============================================
+
+Table cache {
+  key varchar(255) [pk]
+  value mediumtext [not null]
+  expiration int [not null]
+  
+  indexes {
+    expiration
+  }
+}
+
+Table cache_locks {
+  key varchar(255) [pk]
+  owner varchar(255) [not null]
+  expiration int [not null]
+  
+  indexes {
+    expiration
+  }
+}
+
+Table jobs {
+  id bigint [pk, increment]
+  queue varchar(255) [not null]
+  payload longtext [not null]
+  attempts tinyint [not null]
+  reserved_at int [null]
+  available_at int [not null]
+  created_at int [not null]
+  
+  indexes {
+    queue
+  }
+}
+
+Table job_batches {
+  id varchar(255) [pk]
+  name varchar(255) [not null]
+  total_jobs int [not null]
+  pending_jobs int [not null]
+  failed_jobs int [not null]
+  failed_job_ids longtext [not null]
+  options mediumtext [null]
+  cancelled_at int [null]
+  created_at int [not null]
+  finished_at int [null]
+}
+
+Table failed_jobs {
+  id bigint [pk, increment]
+  uuid varchar(255) [unique, not null]
+  connection text [not null]
+  queue text [not null]
+  payload longtext [not null]
+  exception longtext [not null]
+  failed_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table migrations {
+  id int [pk, increment]
+  migration varchar(255) [not null]
+  batch int [not null]
+}
+
+// ============================================
+// ОТНОШЕНИЯ
+// ============================================
+
+Ref: user_user_role.user_id > users.id [delete: cascade]
+Ref: user_user_role.role_id > user_roles.id [delete: cascade]
+Ref: sessions.user_id > users.id [delete: cascade]
+
+Ref: authors.user_id > users.id [delete: cascade]
+Ref: author_addresses.author_id > authors.id [delete: cascade]
+Ref: author_tax_info.author_id > authors.id [delete: cascade]
+Ref: author_tax_info.verified_by > users.id [delete: set null]
+
+Ref: categories.parent_id > categories.id [delete: cascade]
+Ref: category_relations.child_id > categories.id [delete: cascade]
+Ref: category_relations.parent_id > categories.id [delete: cascade]
+
+Ref: attribute_options.attribute_id > attributes.id [delete: cascade]
+Ref: category_attribute.category_id > categories.id [delete: cascade]
+Ref: category_attribute.attribute_id > attributes.id [delete: cascade]
+
+Ref: products.author_id > authors.id [delete: cascade]
+Ref: products.primary_category_id > categories.id [delete: restrict]
+Ref: products.difficulty_level_id > difficulty_levels.id [delete: set null]
+Ref: product_categories.product_id > products.id [delete: cascade]
+Ref: product_categories.category_id > categories.id [delete: cascade]
+Ref: product_prices.product_id > products.id [delete: cascade]
+Ref: product_images.product_id > products.id [delete: cascade]
+Ref: product_files.product_id > products.id [delete: cascade]
+Ref: product_attribute_values.product_id > products.id [delete: cascade]
+Ref: product_attribute_values.attribute_id > attributes.id [delete: cascade]
+Ref: product_attribute_values.option_id > attribute_options.id [delete: set null]
+
+Ref: activity_logs.user_id > users.id [delete: set null]
+
+Ref: carts.user_id > users.id [delete: cascade]
+Ref: cart_items.cart_id > carts.id [delete: cascade]
+Ref: cart_items.product_id > products.id [delete: cascade]
+
+Ref: orders.user_id > users.id [delete: cascade]
+Ref: orders.order_status_id > order_statuses.id [delete: set null]
+Ref: orders.payment_status_id > payment_statuses.id [delete: set null]
+
+Ref: payments.order_id > orders.id [delete: cascade]
+Ref: payments.payment_status_id > payment_statuses.id [delete: cascade]
+
+Ref: refunds.order_id > orders.id [delete: cascade]
+Ref: refunds.payment_id > payments.id [delete: cascade]
+Ref: refunds.order_item_id > order_items.id [delete: cascade]
+Ref: refunds.requested_by > users.id [delete: cascade]
+Ref: refunds.reviewed_by > users.id [delete: set null]
+
+Ref: seller_balances.user_id > users.id [delete: cascade]
+Ref: seller_transactions.user_id > users.id [delete: cascade]
+Ref: seller_transactions.order_id > orders.id [delete: set null]
+Ref: seller_transactions.payout_id > seller_payouts.id [delete: set null]
+Ref: seller_payouts.user_id > users.id [delete: cascade]
+Ref: seller_payouts.processed_by > users.id [delete: set null]
+
+Ref: coupons.author_id > authors.id [delete: cascade]
+Ref: coupon_categories.coupon_id > coupons.id [delete: cascade]
+Ref: coupon_categories.category_id > categories.id [delete: cascade]
+Ref: coupon_products.coupon_id > coupons.id [delete: cascade]
+Ref: coupon_products.product_id > products.id [delete: cascade]
+
+Ref: reviews.user_id > users.id [delete: cascade]
+
+Ref: conversations.order_id > orders.id [delete: cascade]
+Ref: conversations.buyer_id > users.id [delete: cascade]
+Ref: conversations.seller_id > users.id [delete: cascade]
+Ref: conversations.product_id > products.id [delete: set null]
+Ref: conversations.last_message_by > users.id [delete: set null]
+
+Ref: messages.conversation_id > conversations.id [delete: cascade]
+Ref: messages.sender_id > users.id [delete: cascade]
+
+Ref: tickets.user_id > users.id [delete: cascade]
+Ref: tickets.order_id > orders.id [delete: set null]
+Ref: tickets.assigned_to > users.id [delete: set null]
+
+Ref: ticket_messages.ticket_id > tickets.id [delete: cascade]
+Ref: ticket_messages.user_id > users.id [delete: cascade]
+
+Ref: blog_posts.author_id > authors.id [delete: cascade]
+Ref: blog_post_categories.post_id > blog_posts.id [delete: cascade]
+Ref: blog_post_categories.category_id > blog_categories.id [delete: cascade]
+Ref: blog_post_tag.post_id > blog_posts.id [delete: cascade]
+Ref: blog_post_tag.tag_id > tags.id [delete: cascade]
+Ref: blog_comments.post_id > blog_posts.id [delete: cascade]
+Ref: blog_comments.user_id > users.id [delete: cascade]
+Ref: blog_comments.parent_id > blog_comments.id [delete: cascade]
+
+Ref: follows.follower_user_id > users.id [delete: cascade]
+
+Ref: notifications.user_id > users.id [delete: cascade]
+Ref: notification_settings.user_id > users.id [delete: cascade]
+
+Ref: newsletters.segment_id > newsletter_segments.id [delete: set null]
+Ref: newsletter_sends.newsletter_id > newsletters.id [delete: cascade]
+Ref: newsletter_sends.user_id > users.id [delete: cascade]
+
+Ref: customers.user_id > users.id [delete: cascade]
+Ref: wishlists.user_id > users.id [delete: cascade]
+Ref: wishlists.product_id > products.id [delete: cascade]
+
+Ref: reports.reporter_user_id > users.id [delete: cascade]
+Ref: reports.reviewed_by > users.id [delete: set null]
+
+Ref: npd_receipts.author_id > authors.id [delete: cascade]

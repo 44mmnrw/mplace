@@ -1,0 +1,14 @@
+/* Author Zone Layout */
+
+.author-layout__main {
+    min-height: calc(100vh - 98px); /* Full height minus header and footer */
+    padding: 0;
+    background-color: var(--author-bg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .author-layout__main {
+        padding: 16px;
+    }
+}

@@ -1,0 +1,2134 @@
+// mplace Database Schema
+// For dbdiagram.io - https://dbdiagram.io/
+// Маркетплейс мастер-классов по рукоделию
+
+Project mplace {
+  database_type: 'MySQL'
+  Note: 'База данных маркетплейса мастер-классов'
+}
+
+// ============================================
+// ПОЛЬЗОВАТЕЛИ И АУТЕНТИФИКАЦИЯ
+// ============================================
+
+Table users {
+  id bigint [pk, increment]
+  
+  // Личные данные
+  first_name varchar(255) [null]
+  last_name varchar(255) [null]
+  phone varchar(20) [null]
+  avatar varchar(255) [null]
+  
+  // Аутентификация
+  email varchar(255) [unique, not null]
+  email_verified_at timestamp [null]
+  password varchar(255)
+  remember_token varchar(100) [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    email
+    phone
+  }
+  
+  Note: 'Пользователи системы. Общие поля для всех ролей: имя, телефон, email, аватар. Расширенная информация хранится в связанных таблицах: authors (профиль автора), customers (данные покупателя), shops (магазины)'
+}
+
+Table user_roles {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+  }
+  
+  Note: 'Роли пользователей. slug: customer (покупатель), seller (продавец), author (автор), admin (администратор). Один пользователь может иметь несколько ролей одновременно'
+}
+
+Table user_user_role {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  role_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    role_id
+    (user_id, role_id) [unique]
+  }
+  
+  Note: 'Связь пользователей с ролями (many-to-many). Пользователь может быть одновременно покупателем, продавцом и автором'
+}
+
+Table shops {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  
+  // Основная информация
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  about text [null]
+  
+  // Изображения
+  logo varchar(255) [null]
+  banner varchar(255) [null]
+  
+  // Контакты и социальные сети
+  social_links json [null]
+  
+  // Рейтинг и статистика
+  seller_rating decimal(3,2) [default: 0]
+  seller_reviews_count int [default: 0]
+  products_count int [default: 0]
+  sales_count int [default: 0]
+  
+  // Статусы
+  is_verified boolean [default: false]
+  is_active boolean [default: true]
+  status varchar(50) [default: 'pending']
+  
+  // SEO
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    slug
+    is_active
+    is_verified
+    seller_rating
+    (is_active, seller_rating)
+  }
+  
+  Note: 'Магазины/витрины продавцов (мастеров). Один пользователь может иметь несколько магазинов (разные бренды/направления). Каждый магазин содержит товары только своего владельца (user_id). status: pending (на проверке), active (активен), suspended (приостановлен)'
+}
+
+Table authors {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  
+  // Публичная информация
+  display_name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  bio text [null]
+  
+  // Профессиональная информация
+  specializations json [null]
+  experience_years int [null]
+  education text [null]
+  achievements text [null]
+  
+  // Социальные сети
+  social_links json [null]
+  
+  // Статистика
+  masterclasses_count int [default: 0]
+  students_count int [default: 0]
+  author_rating decimal(3,2) [default: 0]
+  author_reviews_count int [default: 0]
+  
+  // Статус
+  is_verified boolean [default: false]
+  is_active boolean [default: true]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    slug
+    is_active
+    is_verified
+    author_rating
+  }
+  
+  Note: 'Профили авторов мастер-классов. Расширенная информация для публичного профиля автора. display_name - публичное имя (может отличаться от users.first_name + users.last_name). Базовые данные (имя, телефон, email, аватар) берутся из users'
+}
+
+Table author_addresses {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  
+  // Тип адреса
+  type varchar(20) [not null, default: 'legal'] // legal (юридический), actual (фактический), postal (почтовый)
+  is_default boolean [default: false]
+  
+  // Адрес
+  country varchar(100) [default: 'Россия']
+  region varchar(100) [null]
+  city varchar(100) [not null]
+  street varchar(255) [null]
+  building varchar(50) [null]
+  apartment varchar(20) [null]
+  postal_code varchar(20) [null]
+  
+  // Контакт для связи
+  contact_name varchar(255) [null]
+  contact_phone varchar(20) [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    author_id
+    (author_id, type)
+    (author_id, is_default)
+  }
+  
+  Note: 'Адреса авторов для выплат и юридических целей. type: legal (юридический адрес для договоров), actual (фактический адрес), postal (для почтовой корреспонденции). Налоговые данные (ИНН, ОГРНИП) хранятся отдельно в author_tax_info'
+}
+
+Table author_tax_info {
+  id bigint [pk, increment]
+  author_id bigint [not null, unique]
+  
+  // Тип налогоплательщика
+  taxpayer_type varchar(30) [not null] // self_employed (самозанятый), individual_entrepreneur (ИП), legal_entity (юрлицо)
+  
+  // === ОБЩИЕ ДАННЫЕ ===
+  inn varchar(12) [not null] // 12 цифр для физлиц/ИП, 10 для юрлиц
+  
+  // === ДЛЯ САМОЗАНЯТЫХ (422-ФЗ) ===
+  npd_registration_date date [null]           // Дата постановки на учёт НПД
+  npd_status_verified boolean [default: false] // Проверен ли статус через API ФНС
+  npd_status_verified_at timestamp [null]     // Дата последней проверки статуса
+  npd_status_active boolean [null]            // Активен ли статус НПД (результат проверки)
+  
+  // === ДЛЯ ИП ===
+  ogrnip varchar(15) [null]          // ОГРНИП (15 цифр)
+  ip_registration_date date [null]   // Дата регистрации ИП
+  
+  // === ДЛЯ ЮРЛИЦ ===
+  company_name varchar(255) [null]   // Полное наименование организации
+  company_short_name varchar(100) [null] // Краткое наименование
+  kpp varchar(9) [null]              // КПП (9 цифр)
+  ogrn varchar(13) [null]            // ОГРН (13 цифр)
+  legal_address text [null]          // Юридический адрес
+  ceo_name varchar(255) [null]       // ФИО руководителя
+  ceo_position varchar(100) [null]   // Должность руководителя
+  
+  // === БАНКОВСКИЕ РЕКВИЗИТЫ ===
+  bank_name varchar(255) [null]      // Название банка
+  bank_bik varchar(9) [null]         // БИК банка (9 цифр)
+  bank_account varchar(20) [null]    // Расчётный счёт (20 цифр)
+  bank_corr_account varchar(20) [null] // Корреспондентский счёт (20 цифр)
+  bank_recipient_name varchar(255) [null] // Получатель платежа (ФИО/название)
+  
+  // === ВЕРИФИКАЦИЯ ===
+  is_verified boolean [default: false]       // Прошёл ли полную верификацию
+  verified_at timestamp [null]               // Дата верификации
+  verified_by bigint [null]                  // Кто верифицировал (admin user_id)
+  verification_documents json [null]         // Загруженные документы [{type, path, uploaded_at}]
+  verification_notes text [null]             // Заметки модератора
+  
+  // === ДОГОВОР ===
+  contract_number varchar(50) [null]         // Номер договора с маркетплейсом
+  contract_date date [null]                  // Дата заключения договора
+  contract_file varchar(255) [null]          // Путь к подписанному договору
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    author_id
+    inn
+    taxpayer_type
+    is_verified
+    npd_status_active
+    (taxpayer_type, is_verified)
+  }
+  
+  Note: 'Налоговые и банковские данные авторов по 422-ФЗ. taxpayer_type: self_employed (самозанятый/НПД), individual_entrepreneur (ИП), legal_entity (юрлицо). Для самозанятых ОБЯЗАТЕЛЬНА периодическая проверка статуса НПД через API ФНС (https://npd.nalog.ru/check-status/) — если статус снят, выплаты должны быть приостановлены. verification_documents хранит сканы: паспорт, свидетельство ИП, выписка ЕГРИП/ЕГРЮЛ. Банковские реквизиты нужны для выплат через seller_payouts'
+}
+
+Table customers {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  
+  // Предпочтения
+  preferred_language varchar(10) [default: 'ru']
+  preferred_currency varchar(3) [default: 'RUB']
+  
+  // Настройки уведомлений
+  newsletter_subscribed boolean [default: true]
+  sms_notifications boolean [default: false]
+  email_notifications boolean [default: true]
+  
+  // Статистика покупок
+  orders_count int [default: 0]
+  total_spent decimal(10,2) [default: 0]
+  
+  // Рейтинг покупателя
+  customer_rating decimal(3,2) [default: 0]
+  customer_reviews_count int [default: 0]
+  
+  // Программа лояльности
+  loyalty_points int [default: 0]
+  loyalty_level varchar(50) [default: 'bronze']
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    loyalty_level
+    orders_count
+    customer_rating
+  }
+  
+  Note: 'Расширенный профиль покупателя. Хранит только специфичные для покупок данные: предпочтения, статистику заказов, программу лояльности, рейтинг от продавцов. Базовые данные (имя, телефон, email, аватар) берутся из users. loyalty_level: bronze, silver, gold, platinum. customer_rating - средний рейтинг покупателя от продавцов'
+}
+
+Table password_reset_tokens {
+  email varchar(255) [pk]
+  token varchar(255)
+  created_at timestamp [null]
+}
+
+Table sessions {
+  id varchar(255) [pk]
+  user_id bigint [null]
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  payload longtext
+  last_activity int
+  
+  indexes {
+    user_id
+    last_activity
+  }
+}
+
+// ============================================
+// КАТЕГОРИИ С МНОЖЕСТВЕННЫМИ РОДИТЕЛЯМИ
+// ============================================
+
+Table categories {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  icon varchar(255) [null]
+  image varchar(255) [null]
+  
+  // Метаданные
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  
+  // SEO
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    slug
+    (is_active, sort_order)
+  }
+  
+  Note: 'Категории товаров/услуг с поддержкой множественных родителей. name может дублироваться (например "Для начинающих" в разных разделах), slug - уникальный для URL'
+}
+
+Table category_relations {
+  id bigint [pk, increment]
+  child_id bigint [not null]
+  parent_id bigint [not null]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    child_id
+    parent_id
+    (child_id, parent_id) [unique]
+  }
+  
+  Note: 'Связи категорий (many-to-many) для иерархии с множественными родителями'
+}
+
+// ============================================
+// АТРИБУТЫ ТОВАРОВ (EAV)
+// ============================================
+
+Table attributes {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  type varchar(50) [not null]
+  description text [null]
+  
+  // Область применения
+  is_global boolean [default: false]
+  
+  // Настройки
+  is_required boolean [default: false]
+  is_filterable boolean [default: true]
+  is_comparable boolean [default: false]
+  sort_order int [default: 0]
+  
+  // Валидация
+  validation_rules json [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    type
+    is_global
+  }
+  
+  Note: 'Атрибуты: text, textarea, number, select, multiselect, checkbox, date, color, file. is_global=true - для всех категорий. is_global=false - только для связанных категорий через category_attribute + автоматическое наследование дочерними категориями от родителей'
+}
+
+Table attribute_options {
+  id bigint [pk, increment]
+  attribute_id bigint [not null]
+  value varchar(255) [not null]
+  label varchar(255) [not null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    attribute_id
+    (attribute_id, sort_order)
+  }
+  
+  Note: 'Опции для select/multiselect атрибутов'
+}
+
+Table category_attribute {
+  id bigint [pk, increment]
+  category_id bigint [not null]
+  attribute_id bigint [not null]
+  is_required boolean [default: false]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    category_id
+    attribute_id
+    (category_id, attribute_id) [unique]
+  }
+  
+  Note: 'Связь атрибутов с категориями. Дочерние категории автоматически наследуют атрибуты родителей (через category_relations), но родители НЕ наследуют атрибуты детей'
+}
+
+// ============================================
+// ТОВАРЫ/УСЛУГИ
+// ============================================
+
+Table products {
+  id bigint [pk, increment]
+  shop_id bigint [not null]
+  author_id bigint [not null]
+  primary_category_id bigint [not null]
+  
+  // Основная информация
+  title varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  sku varchar(100) [unique, null]
+  short_description varchar(500) [null]
+  description text [null]
+  
+  // Настройки доставки контента
+  auto_delivery boolean [default: false]
+  delivery_instructions text [null]
+  
+  // Характеристики
+  format varchar(50) [null]
+  language varchar(10) [default: 'ru']
+  
+  // Дополнительно
+  materials json [null]
+  requirements json [null]
+  what_you_learn json [null]
+  
+  // Статусы и метрики
+  status varchar(50) [default: 'draft']
+  is_active boolean [default: true]
+  is_featured boolean [default: false]
+  views_count int [default: 0]
+  sales_count int [default: 0]
+  rating decimal(3,2) [default: 0]
+  reviews_count int [default: 0]
+  
+  // Тип товара
+  is_digital boolean [default: true]
+  
+  // SEO
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  
+  // Временные метки
+  published_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    shop_id
+    author_id
+    primary_category_id
+    slug
+    sku
+    status
+    (is_active, is_featured)
+    rating
+    sales_count
+    created_at
+  }
+  
+  Note: 'Товары/услуги (мастер-классы, курсы, материалы). Один пользователь может иметь несколько магазинов (разные бренды/направления), но только один профиль автора (authors.user_id UNIQUE). author_id — создатель контента, shop_id — витрина продажи. Товар может продаваться в магазине другого пользователя (реселлинг), поэтому author_id и shop_id.user_id могут различаться. auto_delivery=true — автоматическая выдача файлов после оплаты, false — ручное подтверждение автором. delivery_instructions — инструкции для покупателя (например, как получить доступ). ЦЕНА: Информация о ценах хранится в отдельной таблице product_prices для поддержки мультивалютности и истории изменений'
+}
+
+Table product_categories {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  category_id bigint [not null]
+  sort_order int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    category_id
+    (product_id, category_id) [unique]
+  }
+  
+  Note: 'Дополнительные категории для товара (без основной категории из primary_category_id)'
+}
+
+Table product_prices {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  
+  // Цены
+  price decimal(10,2) [not null]
+  old_price decimal(10,2) [null]
+  currency varchar(3) [default: 'RUB']
+  
+  // Период действия
+  valid_from timestamp [null]
+  valid_to timestamp [null]
+  
+  // Статус
+  is_active boolean [default: true]
+  
+  // Метаданные
+  note text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    (product_id, is_active)
+    (product_id, valid_from, valid_to)
+    currency
+  }
+  
+  Note: 'История цен товаров. Поддержка временных акций, скидок, A/B тестирования. Активная цена определяется флагом is_active и периодом valid_from/valid_to'
+}
+
+Table product_images {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  image_path varchar(255) [not null]
+  
+  // Настройки
+  is_main boolean [default: false]
+  sort_order int [default: 0]
+  
+  // SEO и доступность
+  alt_text varchar(255) [null]
+  title varchar(255) [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    (product_id, is_main)
+    (product_id, sort_order)
+  }
+  
+  Note: 'Изображения товаров. Главное фото определяется через is_main=true. Легкая смена главного фото, контроль порядка через sort_order, SEO-атрибуты для каждого изображения'
+}
+
+Table product_attribute_values {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  attribute_id bigint [not null]
+  
+  // Полиморфные значения
+  value_text text [null]
+  value_int bigint [null]
+  value_decimal decimal(15,4) [null]
+  value_date date [null]
+  value_boolean boolean [null]
+  option_id bigint [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    product_id
+    attribute_id
+    (product_id, attribute_id) [unique]
+    option_id
+  }
+  
+  Note: 'Значения атрибутов для товаров (EAV паттерн)'
+}
+
+Table product_files {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  
+  // Основная информация о файле
+  file_path varchar(500) [not null]
+  file_name varchar(255) [not null]
+  file_size bigint [not null]
+  file_type varchar(50) [null]
+  
+  // Настройки
+  is_preview boolean [default: false]
+  is_active boolean [default: true]
+  sort_order int [default: 0]
+  
+  // Описание
+  description text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    product_id
+    (product_id, is_preview)
+    (product_id, sort_order)
+    is_active
+  }
+  
+  Note: 'Цифровые файлы товара. is_preview=true для превью-файлов (доступны всем без покупки, например первый урок). is_active=false для временно отключенных файлов. file_path хранится зашифрованным для безопасности'
+}
+
+Table order_item_access {
+  id bigint [pk, increment]
+  order_item_id bigint [not null]
+  product_file_id bigint [not null]
+  
+  // Статус доступа
+  status varchar(50) [default: 'pending']
+  
+  // Ручное подтверждение автором
+  confirmed_by bigint [null]
+  confirmed_at timestamp [null]
+  confirmation_notes text [null]
+  
+  // Токен для скачивания
+  download_token varchar(255) [unique, null]
+  token_expires_at timestamp [null]
+  
+  // Ограничения скачивания
+  downloads_count int [default: 0]
+  max_downloads int [default: 10]
+  
+  // Срок действия доступа
+  access_expires_at timestamp [null]
+  
+  // Метаданные
+  first_downloaded_at timestamp [null]
+  last_downloaded_at timestamp [null]
+  
+  // IP-адреса для контроля (JSON массив)
+  download_ips json [null]
+  
+  // Причина отзыва (если status=revoked)
+  revocation_reason text [null]
+  revoked_by bigint [null]
+  revoked_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_item_id
+    product_file_id
+    (order_item_id, product_file_id) [unique]
+    download_token
+    status
+    (status, access_expires_at)
+    confirmed_by
+  }
+  
+  Note: 'Управление доступом к файлам после покупки. status: pending (ожидает подтверждения автора), granted (доступ выдан, токен активен), revoked (доступ отозван), expired (срок истёк). Логика работы: 1) Если products.auto_delivery=true — при оплате заказа сразу создаётся запись со status=granted и генерируется download_token. 2) Если products.auto_delivery=false — создаётся запись со status=pending, автор видит в личном кабинете уведомление и кнопку "Выдать доступ", после подтверждения генерируется токен и status=granted. download_token — уникальный URL для скачивания файла через контроллер (не прямая ссылка). max_downloads=null означает неограниченное количество скачиваний. download_ips хранит массив IP-адресов для выявления злоупотреблений'
+}
+
+// ============================================
+// ОТЗЫВЫ И РЕЙТИНГИ
+// ============================================
+
+Table reviews {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  
+  // Полиморфная связь
+  reviewable_type varchar(50) [not null]
+  reviewable_id bigint [not null]
+  
+  // Связь с заказом (опционально, для товаров)
+  order_id bigint [null]
+  
+  // Оценка и текст
+  rating tinyint [not null]
+  comment text [null]
+  
+  // Модерация и проверка
+  status varchar(20) [default: 'pending']
+  is_verified_purchase boolean [default: false]
+  
+  // Полезность отзыва
+  helpful_count int [default: 0]
+  
+  // Ответ продавца/автора
+  seller_response text [null]
+  seller_response_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    user_id
+    (reviewable_type, reviewable_id)
+    (reviewable_type, reviewable_id, status)
+    order_id
+    rating
+    status
+    created_at
+  }
+  
+  Note: 'Полиморфные отзывы на товары (Product), магазины (Shop), авторов (Author) и покупателей (Customer). reviewable_type: Product/Shop/Author/Customer. rating: 1-5. status: pending/approved/rejected. is_verified_purchase проверяет реальную покупку/взаимодействие через order_id. Примеры: покупатель оставляет отзыв на товар/магазин/автора, продавец оставляет отзыв на покупателя (качество общения, своевременность оплаты). ВАЖНО: Полиморфные связи реализуются на уровне приложения через Laravel Eloquent morphTo()/morphMany() - нельзя создать foreign key constraints в БД для reviewable_type/reviewable_id'
+}
+
+Table wishlists {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  product_id bigint [not null]
+  
+  // Приоритет и заметки
+  priority tinyint [default: 0]
+  notes text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    product_id
+    (user_id, product_id) [unique]
+    (user_id, priority)
+  }
+  
+  Note: 'Избранное/Wishlist пользователей. priority: 0-3 (низкий-высокий). Можно добавить приватные заметки к товару'
+}
+
+// ============================================
+// КОРЗИНА
+// ============================================
+
+Table carts {
+  id bigint [pk, increment]
+  user_id bigint [null]
+  session_id varchar(255) [null]
+  
+  // Промокод
+  coupon_code varchar(50) [null]
+  
+  // Метаданные
+  expires_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    session_id
+    expires_at
+  }
+  
+  Note: 'Корзины покупателей. user_id=null для гостей (используется session_id). При логине корзина гостя мерджится с корзиной пользователя через session_id. expires_at - автоматическая очистка старых корзин (например, через 30 дней)'
+}
+
+Table cart_items {
+  id bigint [pk, increment]
+  cart_id bigint [not null]
+  product_id bigint [not null]
+  
+  // Количество и цена
+  quantity int [not null, default: 1]
+  price_at_add decimal(10,2) [not null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    cart_id
+    product_id
+    (cart_id, product_id) [unique]
+  }
+  
+  Note: 'Товары в корзине. price_at_add - цена на момент добавления в корзину (для отслеживания изменений). quantity для физических товаров, для цифровых всегда 1'
+}
+
+// ============================================
+// УВЕДОМЛЕНИЯ
+// ============================================
+
+Table notifications {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  
+  // Тип уведомления
+  type varchar(100) [not null]
+  
+  // Полиморфная связь (опционально)
+  notifiable_type varchar(50) [null]
+  notifiable_id bigint [null]
+  
+  // Содержание
+  title varchar(255) [not null]
+  message text [null]
+  data json [null]
+  
+  // Каналы доставки
+  channels json [null]
+  
+  // Статусы доставки
+  read_at timestamp [null]
+  email_sent_at timestamp [null]
+  push_sent_at timestamp [null]
+  
+  created_at timestamp
+  
+  indexes {
+    user_id
+    (user_id, read_at)
+    type
+    (notifiable_type, notifiable_id)
+    created_at
+  }
+  
+  Note: 'Уведомления пользователей. type: order_created, order_paid, order_completed, new_review, review_response, new_message, payout_completed, product_published, follower_new_product и т.д. notifiable_type/id - полиморфная связь с объектом (Order, Review, Product, Message). channels: ["database", "email", "push"] - каналы доставки. data - дополнительные данные для шаблона уведомления'
+}
+
+Table notification_settings {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  
+  // Тип уведомления
+  notification_type varchar(100) [not null]
+  
+  // Каналы
+  email_enabled boolean [default: true]
+  push_enabled boolean [default: true]
+  database_enabled boolean [default: true]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    (user_id, notification_type) [unique]
+  }
+  
+  Note: 'Настройки уведомлений пользователя. Позволяет включать/отключать отдельные типы уведомлений по каналам. notification_type соответствует notifications.type'
+}
+
+// ============================================
+// ПЕРЕПИСКА (ТОЛЬКО ПОСЛЕ ПОКУПКИ)
+// ============================================
+
+Table conversations {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  buyer_id bigint [not null]
+  seller_id bigint [not null]
+  product_id bigint [null]
+  
+  // Тема и статус
+  subject varchar(255) [not null]
+  status varchar(50) [default: 'open']
+  
+  // Последнее сообщение
+  last_message_at timestamp [null]
+  last_message_by bigint [null]
+  
+  // Счетчики непрочитанных
+  unread_count_buyer int [default: 0]
+  unread_count_seller int [default: 0]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    buyer_id
+    seller_id
+    product_id
+    status
+    (buyer_id, status)
+    (seller_id, status)
+    last_message_at
+  }
+  
+  Note: 'Переписка покупатель-продавец. ВАЖНО: Создается только при наличии order_id - общение возможно только после покупки. status: open (открыта), closed (закрыта), archived (архивирована)'
+}
+
+Table messages {
+  id bigint [pk, increment]
+  conversation_id bigint [not null]
+  sender_id bigint [not null]
+  
+  // Содержание
+  message text [not null]
+  
+  // Вложения
+  attachments json [null]
+  
+  // Прочтение
+  read_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    conversation_id
+    sender_id
+    (conversation_id, created_at)
+    read_at
+  }
+  
+  Note: 'Сообщения в переписке. attachments - JSON массив файлов [{"name": "file.jpg", "path": "...", "size": 12345}]. Мягкое удаление для истории'
+}
+
+// ============================================
+// ТИКЕТЫ ПОДДЕРЖКИ
+// ============================================
+
+Table tickets {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  order_id bigint [null]
+  
+  // Основная информация
+  subject varchar(255) [not null]
+  description text [not null]
+  
+  // Категория и приоритет
+  category varchar(100) [null]
+  priority varchar(50) [default: 'medium']
+  
+  // Статус
+  status varchar(50) [default: 'new']
+  
+  // Назначение
+  assigned_to bigint [null]
+  assigned_at timestamp [null]
+  
+  // Временные метки
+  first_response_at timestamp [null]
+  resolved_at timestamp [null]
+  closed_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    order_id
+    status
+    priority
+    assigned_to
+    (status, priority)
+    (assigned_to, status)
+    created_at
+  }
+  
+  Note: 'Тикеты в службу поддержки. category: payment, delivery, refund, technical, other. priority: low, medium, high, critical. status: new, open, pending, resolved, closed. assigned_to - ID сотрудника поддержки (users с ролью support/admin)'
+}
+
+Table ticket_messages {
+  id bigint [pk, increment]
+  ticket_id bigint [not null]
+  user_id bigint [not null]
+  
+  // Содержание
+  message text [not null]
+  
+  // Вложения
+  attachments json [null]
+  
+  // Тип сообщения
+  is_staff_reply boolean [default: false]
+  is_internal_note boolean [default: false]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    ticket_id
+    user_id
+    (ticket_id, created_at)
+    is_staff_reply
+  }
+  
+  Note: 'Сообщения в тикетах. is_staff_reply=true для ответов от поддержки. is_internal_note=true для внутренних заметок (не видны пользователю)'
+}
+
+// ============================================
+// ПОДПИСКИ НА АВТОРОВ И МАГАЗИНЫ
+// ============================================
+
+Table follows {
+  id bigint [pk, increment]
+  follower_user_id bigint [not null]
+  
+  // Полиморфная связь
+  followable_type varchar(50) [not null]
+  followable_id bigint [not null]
+  
+  // Настройки уведомлений
+  notify_new_products boolean [default: true]
+  notify_sales boolean [default: true]
+  notify_blog_posts boolean [default: true]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    follower_user_id
+    (followable_type, followable_id)
+    (follower_user_id, followable_type, followable_id) [unique]
+    created_at
+  }
+  
+  Note: 'Подписки на авторов (Author) и магазины (Shop). followable_type: Author/Shop. Пользователь получает уведомления о новых товарах, акциях, постах в блоге. Полиморфная связь через Laravel morphTo()/morphMany()'
+}
+
+// ============================================
+// ЖАЛОБЫ И МОДЕРАЦИЯ
+// ============================================
+
+Table reports {
+  id bigint [pk, increment]
+  reporter_user_id bigint [not null]
+  
+  // Полиморфная связь - на что жалоба
+  reportable_type varchar(50) [not null]
+  reportable_id bigint [not null]
+  
+  // Причина и описание
+  reason varchar(100) [not null]
+  description text [null]
+  
+  // Статус модерации
+  status varchar(50) [default: 'pending']
+  
+  // Обработка
+  reviewed_by bigint [null]
+  reviewed_at timestamp [null]
+  resolution text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    reporter_user_id
+    (reportable_type, reportable_id)
+    status
+    reviewed_by
+    (status, created_at)
+    created_at
+  }
+  
+  Note: 'Жалобы на контент. reportable_type: Product/Shop/Author/Review/BlogPost/User. reason: spam, inappropriate, copyright, fraud, misleading, offensive, other. status: pending (на рассмотрении), reviewing (в обработке), resolved (решена), dismissed (отклонена)'
+}
+
+// ============================================
+// СКИДОЧНЫЕ СЕРТИФИКАТЫ (ПРОМОКОДЫ)
+// ============================================
+
+Table coupons {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  
+  // Код и название
+  code varchar(50) [unique, not null]
+  name varchar(255) [not null]
+  description text [null]
+  
+  // Тип и размер скидки
+  discount_type varchar(20) [not null]
+  discount_value decimal(10,2) [not null]
+  
+  // Ограничения применения
+  min_purchase_amount decimal(10,2) [null]
+  max_discount_amount decimal(10,2) [null]
+  
+  // Период действия
+  valid_from timestamp [null]
+  valid_to timestamp [null]
+  
+  // Лимиты использования
+  usage_limit int [null]
+  usage_limit_per_user int [default: 1]
+  used_count int [default: 0]
+  
+  // Статус
+  is_active boolean [default: true]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    author_id
+    code
+    is_active
+    (is_active, valid_from, valid_to)
+    created_at
+  }
+  
+  Note: 'Скидочные сертификаты (промокоды) от авторов. discount_type: percentage (процент), fixed (фиксированная сумма). discount_value: процент (0-100) или сумма в рублях. usage_limit - общий лимит использований, usage_limit_per_user - лимит на одного пользователя. Может применяться ко всем товарам автора, к конкретным категориям или товарам (через связанные таблицы)'
+}
+
+Table coupon_categories {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  category_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    coupon_id
+    category_id
+    (coupon_id, category_id) [unique]
+  }
+  
+  Note: 'Связь промокодов с категориями. Если таблица пустая для купона - применяется ко всем товарам автора. Если есть записи - только к товарам из указанных категорий'
+}
+
+Table coupon_products {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  product_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    coupon_id
+    product_id
+    (coupon_id, product_id) [unique]
+  }
+  
+  Note: 'Связь промокодов с конкретными товарами. Приоритет выше, чем у категорий - если есть записи в этой таблице, промокод применяется только к этим товарам'
+}
+
+Table coupon_usage {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  user_id bigint [not null]
+  order_id bigint [not null]
+  
+  // Примененная скидка
+  discount_amount decimal(10,2) [not null]
+  
+  created_at timestamp
+  
+  indexes {
+    coupon_id
+    user_id
+    order_id
+    (coupon_id, user_id)
+    (coupon_id, order_id) [unique]
+  }
+  
+  Note: 'История использования промокодов. Записывается при оформлении заказа с промокодом. discount_amount - фактическая сумма скидки в заказе'
+}
+
+// ============================================
+// БЛОГ АВТОРОВ
+// ============================================
+
+Table blog_posts {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  
+  // Основная информация
+  title varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  excerpt text [null]
+  content longtext [not null]
+  
+  // Изображения
+  featured_image varchar(255) [null]
+  
+  // Статусы
+  status varchar(50) [default: 'draft']
+  is_featured boolean [default: false]
+  
+  // Метрики
+  views_count int [default: 0]
+  likes_count int [default: 0]
+  comments_count int [default: 0]
+  
+  // SEO
+  meta_title varchar(255) [null]
+  meta_description text [null]
+  meta_keywords text [null]
+  
+  // Временные метки
+  published_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    author_id
+    slug
+    status
+    (status, published_at)
+    is_featured
+    views_count
+    created_at
+  }
+  
+  Note: 'Посты блога авторов. status: draft (черновик), published (опубликован), scheduled (по расписанию). Авторы могут писать статьи, делиться опытом, привлекать аудиторию'
+}
+
+Table blog_categories {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    sort_order
+  }
+  
+  Note: 'Категории блога. Например: Мастер-классы, Новости, Лайфхаки, Истории успеха'
+}
+
+Table blog_post_categories {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  category_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    post_id
+    category_id
+    (post_id, category_id) [unique]
+  }
+  
+  Note: 'Связь постов с категориями (many-to-many)'
+}
+
+Table tags {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  usage_count int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    usage_count
+  }
+  
+  Note: 'Теги для постов блога. usage_count - количество использований тега'
+}
+
+Table blog_post_tag {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  tag_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    post_id
+    tag_id
+    (post_id, tag_id) [unique]
+  }
+  
+  Note: 'Связь постов с тегами (many-to-many)'
+}
+
+Table blog_comments {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  user_id bigint [not null]
+  parent_id bigint [null]
+  
+  // Содержание
+  comment text [not null]
+  
+  // Модерация
+  status varchar(20) [default: 'pending']
+  
+  // Лайки
+  likes_count int [default: 0]
+  
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+  
+  indexes {
+    post_id
+    user_id
+    parent_id
+    status
+    (post_id, status)
+    created_at
+  }
+  
+  Note: 'Комментарии к постам блога. parent_id для вложенных ответов. status: pending (на модерации), approved (одобрен), rejected (отклонен)'
+}
+
+// ============================================
+// РАССЫЛКИ
+// ============================================
+
+Table newsletters {
+  id bigint [pk, increment]
+  
+  // Основная информация
+  name varchar(255) [not null]
+  subject varchar(255) [not null]
+  preheader varchar(255) [null]
+  
+  // Содержание
+  content_html longtext [not null]
+  content_text text [null]
+  
+  // Отправка
+  sender_name varchar(255) [null]
+  sender_email varchar(255) [null]
+  reply_to varchar(255) [null]
+  
+  // Планирование
+  scheduled_at timestamp [null]
+  sent_at timestamp [null]
+  
+  // Статус
+  status varchar(50) [default: 'draft']
+  
+  // Сегментация
+  segment_id bigint [null]
+  
+  // Статистика
+  recipients_count int [default: 0]
+  sent_count int [default: 0]
+  opened_count int [default: 0]
+  clicked_count int [default: 0]
+  bounced_count int [default: 0]
+  unsubscribed_count int [default: 0]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    status
+    scheduled_at
+    sent_at
+    segment_id
+    created_at
+  }
+  
+  Note: 'Рассылки для покупателей. status: draft (черновик), scheduled (запланирована), sending (отправляется), sent (отправлена), canceled (отменена). preheader - текст превью в почтовом клиенте'
+}
+
+Table newsletter_segments {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  description text [null]
+  
+  // Условия сегментации (JSON)
+  conditions json [not null]
+  
+  // Статистика
+  users_count int [default: 0]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    name
+  }
+  
+  Note: 'Сегменты аудитории для таргетированных рассылок. conditions - JSON с правилами фильтрации: {"loyalty_level": "gold", "total_spent": {">": 10000}, "orders_count": {">": 5}}'
+}
+
+Table newsletter_sends {
+  id bigint [pk, increment]
+  newsletter_id bigint [not null]
+  user_id bigint [not null]
+  
+  // Статус отправки
+  status varchar(50) [default: 'pending']
+  
+  // Временные метки
+  sent_at timestamp [null]
+  opened_at timestamp [null]
+  clicked_at timestamp [null]
+  bounced_at timestamp [null]
+  unsubscribed_at timestamp [null]
+  
+  // Дополнительно
+  opens_count int [default: 0]
+  clicks_count int [default: 0]
+  error_message text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    newsletter_id
+    user_id
+    status
+    (newsletter_id, user_id) [unique]
+    sent_at
+    opened_at
+  }
+  
+  Note: 'История отправок рассылок конкретным пользователям. status: pending (в очереди), sent (отправлено), opened (открыто), clicked (кликнуто), bounced (отскочило), unsubscribed (отписался), failed (ошибка)'
+}
+
+// ============================================
+// ЗАКАЗЫ
+// ============================================
+
+Table orders {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  
+  // Номер заказа
+  order_number varchar(50) [unique, not null]
+  
+  // Суммы
+  subtotal decimal(10,2) [not null]
+  tax decimal(10,2) [default: 0]
+  shipping decimal(10,2) [default: 0]
+  discount decimal(10,2) [default: 0]
+  total decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  
+  // Статусы
+  order_status_id bigint [null]
+  payment_status_id bigint [null]
+  
+  // Платежная информация
+  payment_method varchar(50) [null]
+  payment_transaction_id varchar(255) [null]
+  paid_at timestamp [null]
+  
+  // Адреса и заметки
+  shipping_address json [null]
+  billing_address json [null]
+  customer_notes text [null]
+  admin_notes text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    order_number
+    order_status_id
+    payment_status_id
+    (user_id, order_status_id)
+    created_at
+  }
+  
+  Note: 'Заказы пользователей. Статусы управляются через таблицы order_statuses и payment_statuses'
+}
+
+Table order_items {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  product_id bigint [not null]
+  shop_id bigint [not null]
+  
+  // Снимок данных на момент покупки
+  product_title varchar(255) [not null]
+  price decimal(10,2) [not null]
+  quantity int [not null, default: 1]
+  subtotal decimal(10,2) [not null]
+  
+  // Комиссия маркетплейса
+  commission_rate decimal(5,2) [not null]
+  commission_amount decimal(10,2) [not null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    product_id
+    shop_id
+    (order_id, product_id)
+  }
+  
+  Note: 'Позиции заказа. Хранит снимок данных товара на момент покупки (название, цена). commission_rate и commission_amount фиксируются на момент покупки для точного расчета выплат продавцу'
+}
+
+Table order_statuses {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  description text [null]
+  color varchar(20) [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    sort_order
+  }
+  
+  Note: 'Статусы заказов. slug: pending, processing, completed, canceled, refunded. color - для отображения в UI (например: #FFA500 для pending)'
+}
+
+Table payment_statuses {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(100) [unique, not null]
+  description text [null]
+  color varchar(20) [null]
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    sort_order
+  }
+  
+  Note: 'Статусы оплаты. slug: pending, paid, failed, refunded, partially_refunded. color - для отображения в UI'
+}
+
+Table payments {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  payment_status_id bigint [not null]
+  
+  // Суммы
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  
+  // Платежная система
+  payment_method varchar(50) [not null]
+  payment_gateway varchar(50) [not null]
+  
+  // Транзакция
+  transaction_id varchar(255) [unique, null]
+  gateway_response json [null]
+  
+  // Временные метки событий
+  paid_at timestamp [null]
+  failed_at timestamp [null]
+  refunded_at timestamp [null]
+  
+  // Дополнительно
+  failure_reason text [null]
+  refund_reason text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    payment_status_id
+    transaction_id
+    payment_gateway
+    (order_id, payment_status_id)
+    created_at
+  }
+  
+  Note: 'История всех платежных транзакций. Хранит все попытки оплаты (успешные и неуспешные), возвраты, частичные возвраты. payment_method: card, yookassa, sbp, cash. payment_gateway: yookassa, stripe, paypal. gateway_response - полный JSON ответ от платежной системы для reconciliation'
+}
+
+Table refunds {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  payment_id bigint [not null]
+  
+  // Позиции для частичного возврата (null = полный возврат)
+  order_item_id bigint [null]
+  
+  // Суммы
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  
+  // Причина и описание
+  reason varchar(100) [not null] // customer_request, defective, not_as_described, duplicate, fraud, other
+  description text [null]
+  
+  // Статус
+  status varchar(50) [default: 'pending'] // pending, approved, processing, completed, rejected
+  
+  // Кто запросил/обработал
+  requested_by bigint [not null]
+  reviewed_by bigint [null]
+  reviewed_at timestamp [null]
+  
+  // Результат обработки
+  rejection_reason text [null]
+  
+  // Транзакция возврата
+  transaction_id varchar(255) [null]
+  gateway_response json [null]
+  refunded_at timestamp [null]
+  
+  // Влияние на баланс продавца
+  seller_balance_adjusted boolean [default: false]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    order_id
+    payment_id
+    order_item_id
+    status
+    requested_by
+    reviewed_by
+    (order_id, status)
+    created_at
+  }
+  
+  Note: 'История возвратов средств. Поддерживает частичные возвраты (по order_item_id) и полные (order_item_id=null). reason: customer_request (по желанию клиента), defective (брак), not_as_described (не соответствует описанию), duplicate (дубль заказа), fraud (мошенничество), other. status: pending → approved/rejected → processing → completed. seller_balance_adjusted=true когда сумма списана с баланса продавца'
+}
+
+// ============================================
+// ВЫПЛАТЫ ПРОДАВЦАМ
+// ============================================
+
+Table seller_balances {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  
+  // Баланс
+  available_balance decimal(10,2) [default: 0]
+  pending_balance decimal(10,2) [default: 0]
+  total_earned decimal(10,2) [default: 0]
+  total_withdrawn decimal(10,2) [default: 0]
+  
+  // Холд период
+  hold_days int [default: 7]
+  
+  // Метаданные
+  last_payout_at timestamp [null]
+  next_payout_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+  }
+  
+  Note: 'Баланс продавца. available_balance - доступно для вывода. pending_balance - в холде (ожидает hold_days дней после заказа). total_earned - всего заработано. total_withdrawn - всего выведено. hold_days - период удержания средств (по умолчанию 7 дней после completed заказа)'
+}
+
+Table seller_transactions {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  order_id bigint [null]
+  payout_id bigint [null]
+  
+  // Тип транзакции
+  type varchar(50) [not null]
+  
+  // Суммы
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  
+  // Описание
+  description text [null]
+  
+  // Балансы до/после
+  balance_before decimal(10,2) [not null]
+  balance_after decimal(10,2) [not null]
+  
+  // Дата разблокировки (для pending транзакций)
+  available_at timestamp [null]
+  
+  created_at timestamp
+  
+  indexes {
+    user_id
+    order_id
+    payout_id
+    type
+    (user_id, type)
+    (user_id, created_at)
+    available_at
+  }
+  
+  Note: 'История транзакций продавца. type: earning (поступление с заказа), payout (выплата), refund (возврат), fee (комиссия/штраф), bonus (бонус). available_at - когда средства станут доступны для вывода (null = сразу доступны)'
+}
+
+Table seller_payouts {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  
+  // Сумма
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'RUB']
+  
+  // Метод вывода
+  payout_method varchar(50) [not null]
+  
+  // Реквизиты (зашифрованы)
+  payout_details json [not null]
+  
+  // Статус
+  status varchar(50) [default: 'pending']
+  
+  // Обработка
+  processed_at timestamp [null]
+  processed_by bigint [null]
+  
+  // Транзакция платежной системы
+  transaction_id varchar(255) [null]
+  gateway_response json [null]
+  
+  // Причина отклонения
+  rejection_reason text [null]
+  
+  // Дополнительно
+  fee_amount decimal(10,2) [default: 0]
+  notes text [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    user_id
+    status
+    (user_id, status)
+    (status, created_at)
+    created_at
+    processed_at
+  }
+  
+  Note: 'Запросы на выплату продавцам. status: pending (ожидает), processing (обрабатывается), completed (выполнена), failed (ошибка), rejected (отклонена). payout_method: bank_card, bank_account, yoomoney, qiwi, paypal. payout_details: JSON с реквизитами (номер карты/счета, БИК и т.д.). fee_amount - комиссия за вывод'
+}
+
+Table npd_receipts {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  payout_id bigint [null]          // Связь с выплатой (если чек на выплату)
+  order_id bigint [null]           // Связь с заказом (если чек на конкретный заказ)
+  
+  // Данные чека из ФНС
+  receipt_id varchar(50) [null]    // ID чека в системе ФНС "Мой налог"
+  receipt_uuid varchar(100) [null] // UUID чека (для API)
+  receipt_link varchar(500) [null] // Ссылка на чек (для проверки покупателем)
+  receipt_file varchar(255) [null] // Сохранённый PDF/изображение чека
+  
+  // Суммы
+  amount decimal(10,2) [not null]  // Сумма чека
+  
+  // Описание услуги
+  service_name varchar(255) [not null] // Наименование услуги в чеке
+  
+  // Статус
+  status varchar(50) [default: 'pending'] // pending, created, cancelled, error
+  
+  // Метод формирования
+  created_by varchar(20) [not null] // api (через API ФНС), manual (загружен автором)
+  
+  // Ошибки API
+  error_code varchar(50) [null]
+  error_message text [null]
+  
+  // Временные метки
+  receipt_date date [not null]     // Дата чека
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    author_id
+    payout_id
+    order_id
+    receipt_id
+    status
+    (author_id, status)
+    (author_id, receipt_date)
+    receipt_date
+  }
+  
+  Note: 'Чеки самозанятых по 422-ФЗ. ОБЯЗАТЕЛЬНЫ для всех выплат самозанятым. status: pending (ожидает формирования), created (сформирован), cancelled (аннулирован), error (ошибка API). created_by: api (маркетплейс формирует через API ФНС как агент), manual (самозанятый сам формирует и загружает). Чек может быть привязан к payout_id (на всю выплату) или к order_id (на конкретный заказ) — зависит от бизнес-модели. receipt_link позволяет покупателю проверить подлинность чека на сайте ФНС'
+}
+
+// ============================================
+// ПОДПИСКИ ДЛЯ МАГАЗИНОВ
+// ============================================
+
+Table subscription_plans {
+  id bigint [pk, increment]
+  
+  // Основная информация
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text [null]
+  
+  // Цены
+  price_monthly decimal(10,2) [not null]
+  price_yearly decimal(10,2) [null]
+  
+  // Ограничения
+  max_products int [null]
+  max_images_per_product int [null]
+  commission_rate decimal(5,2) [null]
+  
+  // Возможности
+  features json [null]
+  
+  // Приоритет и видимость
+  sort_order int [default: 0]
+  is_active boolean [default: true]
+  is_default boolean [default: false]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    slug
+    is_active
+    is_default
+    sort_order
+  }
+  
+  Note: 'Тарифные планы для магазинов. is_default=true для бесплатного базового плана. features: JSON с доп. возможностями (analytics, priority_support, custom_domain, featured_listings и т.д.). commission_rate: процент комиссии маркетплейса с продаж'
+}
+
+Table shop_subscriptions {
+  id bigint [pk, increment]
+  shop_id bigint [not null]
+  plan_id bigint [not null]
+  
+  // Период действия
+  started_at timestamp [not null]
+  expires_at timestamp [null]
+  
+  // Статус
+  status varchar(50) [default: 'active']
+  
+  // Оплата
+  billing_cycle varchar(20) [null]
+  amount_paid decimal(10,2) [null]
+  payment_method varchar(50) [null]
+  
+  // Автопродление
+  auto_renew boolean [default: true]
+  canceled_at timestamp [null]
+  
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    shop_id
+    plan_id
+    status
+    (shop_id, status)
+    expires_at
+  }
+  
+  Note: 'Подписки магазинов. status: active (активна), expired (истекла), canceled (отменена), suspended (приостановлена). billing_cycle: monthly/yearly. ВАЖНО: Один магазин может иметь только одну активную подписку - реализуется через валидацию в приложении (Laravel не поддерживает partial unique indexes в DBML, но в миграции можно добавить: $table->unique(["shop_id", "status"], "unique_active_subscription")->where("status", "active"))'
+}
+
+// ============================================
+// СИСТЕМНЫЕ ТАБЛИЦЫ LARAVEL
+// ============================================
+
+Table cache {
+  key varchar(255) [pk]
+  value mediumtext
+  expiration int
+}
+
+Table cache_locks {
+  key varchar(255) [pk]
+  owner varchar(255)
+  expiration int
+}
+
+Table jobs {
+  id bigint [pk, increment]
+  queue varchar(255)
+  payload longtext
+  attempts tinyint
+  reserved_at int [null]
+  available_at int
+  created_at int
+  
+  indexes {
+    (queue, reserved_at)
+  }
+}
+
+Table job_batches {
+  id varchar(255) [pk]
+  name varchar(255)
+  total_jobs int
+  pending_jobs int
+  failed_jobs int
+  failed_job_ids longtext
+  options mediumtext [null]
+  cancelled_at int [null]
+  created_at int
+  finished_at int [null]
+}
+
+Table failed_jobs {
+  id bigint [pk, increment]
+  uuid varchar(255) [unique]
+  connection text
+  queue text
+  payload longtext
+  exception longtext
+  failed_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================
+// АУДИТ И ЛОГИРОВАНИЕ
+// ============================================
+
+Table activity_logs {
+  id bigint [pk, increment]
+  
+  // Кто выполнил действие (null для системных/анонимных)
+  user_id bigint [null]
+  
+  // Тип действия
+  action varchar(100) [not null] // auth.login, auth.logout, order.created, product.updated, etc.
+  
+  // На какой объект направлено действие (полиморфно)
+  subject_type varchar(50) [null] // User, Order, Product, Shop, etc.
+  subject_id bigint [null]
+  
+  // Детали изменений
+  properties json [null] // {"old": {...}, "new": {...}, "attributes": [...]}
+  
+  // Контекст запроса
+  ip_address varchar(45) [null]
+  user_agent varchar(500) [null]
+  url varchar(500) [null]
+  method varchar(10) [null] // GET, POST, PUT, DELETE
+  
+  // Дополнительные метаданные
+  extra json [null] // Любые доп. данные: device_type, browser, country, etc.
+  
+  created_at timestamp
+  
+  indexes {
+    user_id
+    action
+    (subject_type, subject_id)
+    (user_id, action)
+    (user_id, created_at)
+    ip_address
+    created_at
+  }
+  
+  Note: 'Аудит действий пользователей и системы. action использует dot-notation: auth.login, auth.logout, auth.failed, order.created, order.paid, order.refunded, product.created, product.updated, product.deleted, user.updated, shop.created, payout.requested, admin.user_banned и т.д. properties хранит старые/новые значения для отслеживания изменений. Для GDPR/безопасности: хранить минимум 90 дней, удалять персональные данные после'
+}
+
+// ============================================
+// СВЯЗИ (RELATIONSHIPS)
+// ============================================
+
+// Пользователи, магазины и авторы
+Ref: user_user_role.user_id > users.id [delete: cascade]
+Ref: user_user_role.role_id > user_roles.id [delete: cascade]
+Ref: shops.user_id > users.id [delete: cascade]
+Ref: authors.user_id > users.id [delete: cascade]
+Ref: customers.user_id > users.id [delete: cascade]
+Ref: author_tax_info.author_id > authors.id [delete: cascade]
+Ref: author_tax_info.verified_by > users.id [delete: set null]
+
+// Категории
+Ref: category_relations.child_id > categories.id [delete: cascade]
+Ref: category_relations.parent_id > categories.id [delete: cascade]
+
+// Атрибуты
+Ref: attribute_options.attribute_id > attributes.id [delete: cascade]
+Ref: category_attribute.category_id > categories.id [delete: cascade]
+Ref: category_attribute.attribute_id > attributes.id [delete: cascade]
+
+// Товары
+Ref: products.shop_id > shops.id [delete: cascade]
+Ref: products.author_id > authors.id [delete: restrict]
+Ref: products.primary_category_id > categories.id [delete: restrict]
+Ref: product_categories.product_id > products.id [delete: cascade]
+Ref: product_categories.category_id > categories.id [delete: cascade]
+Ref: product_prices.product_id > products.id [delete: cascade]
+Ref: product_images.product_id > products.id [delete: cascade]
+Ref: product_attribute_values.product_id > products.id [delete: cascade]
+Ref: product_attribute_values.attribute_id > attributes.id [delete: cascade]
+Ref: product_attribute_values.option_id > attribute_options.id [delete: set null]
+Ref: product_files.product_id > products.id [delete: cascade]
+Ref: order_item_access.order_item_id > order_items.id [delete: cascade]
+Ref: order_item_access.product_file_id > product_files.id [delete: restrict]
+Ref: order_item_access.confirmed_by > users.id [delete: set null]
+Ref: order_item_access.revoked_by > users.id [delete: set null]
+
+// Отзывы (полиморфные - связи на уровне приложения)
+Ref: reviews.user_id > users.id [delete: cascade]
+Ref: reviews.order_id > orders.id [delete: set null]
+
+// Промокоды
+Ref: coupons.author_id > authors.id [delete: cascade]
+Ref: coupon_categories.coupon_id > coupons.id [delete: cascade]
+Ref: coupon_categories.category_id > categories.id [delete: cascade]
+Ref: coupon_products.coupon_id > coupons.id [delete: cascade]
+Ref: coupon_products.product_id > products.id [delete: cascade]
+Ref: coupon_usage.coupon_id > coupons.id [delete: restrict]
+Ref: coupon_usage.user_id > users.id [delete: cascade]
+Ref: coupon_usage.order_id > orders.id [delete: cascade]
+
+// Блог
+Ref: blog_posts.author_id > authors.id [delete: cascade]
+Ref: blog_post_categories.post_id > blog_posts.id [delete: cascade]
+Ref: blog_post_categories.category_id > blog_categories.id [delete: cascade]
+Ref: blog_post_tag.post_id > blog_posts.id [delete: cascade]
+Ref: blog_post_tag.tag_id > tags.id [delete: cascade]
+Ref: blog_comments.post_id > blog_posts.id [delete: cascade]
+Ref: blog_comments.user_id > users.id [delete: cascade]
+Ref: blog_comments.parent_id > blog_comments.id [delete: cascade]
+
+// Рассылки
+Ref: newsletters.segment_id > newsletter_segments.id [delete: set null]
+Ref: newsletter_sends.newsletter_id > newsletters.id [delete: cascade]
+Ref: newsletter_sends.user_id > users.id [delete: cascade]
+
+// Заказы
+Ref: orders.user_id > users.id [delete: cascade]
+Ref: orders.order_status_id > order_statuses.id [delete: set null]
+Ref: orders.payment_status_id > payment_statuses.id [delete: set null]
+Ref: order_items.order_id > orders.id [delete: cascade]
+Ref: order_items.product_id > products.id [delete: restrict]
+Ref: order_items.shop_id > shops.id [delete: restrict]
+
+// Платежи
+Ref: payments.order_id > orders.id [delete: cascade]
+Ref: payments.payment_status_id > payment_statuses.id [delete: restrict]
+
+// Выплаты продавцам
+Ref: seller_balances.user_id > users.id [delete: cascade]
+Ref: seller_transactions.user_id > users.id [delete: cascade]
+Ref: seller_transactions.order_id > orders.id [delete: set null]
+Ref: seller_transactions.payout_id > seller_payouts.id [delete: set null]
+Ref: seller_payouts.user_id > users.id [delete: cascade]
+Ref: seller_payouts.processed_by > users.id [delete: set null]
+
+// Чеки НПД (самозанятые)
+Ref: npd_receipts.author_id > authors.id [delete: cascade]
+Ref: npd_receipts.payout_id > seller_payouts.id [delete: set null]
+Ref: npd_receipts.order_id > orders.id [delete: set null]
+
+// Подписки
+Ref: shop_subscriptions.shop_id > shops.id [delete: cascade]
+Ref: shop_subscriptions.plan_id > subscription_plans.id [delete: restrict]
+
+// Wishlist
+Ref: wishlists.user_id > users.id [delete: cascade]
+Ref: wishlists.product_id > products.id [delete: cascade]
+
+// Корзина
+Ref: carts.user_id > users.id [delete: cascade]
+Ref: cart_items.cart_id > carts.id [delete: cascade]
+Ref: cart_items.product_id > products.id [delete: cascade]
+
+// Уведомления
+Ref: notifications.user_id > users.id [delete: cascade]
+Ref: notification_settings.user_id > users.id [delete: cascade]
+
+// Переписка
+Ref: conversations.order_id > orders.id [delete: cascade]
+Ref: conversations.buyer_id > users.id [delete: cascade]
+Ref: conversations.seller_id > users.id [delete: cascade]
+Ref: conversations.product_id > products.id [delete: set null]
+Ref: messages.conversation_id > conversations.id [delete: cascade]
+Ref: messages.sender_id > users.id [delete: cascade]
+
+// Тикеты поддержки
+Ref: tickets.user_id > users.id [delete: cascade]
+Ref: tickets.order_id > orders.id [delete: set null]
+Ref: tickets.assigned_to > users.id [delete: set null]
+Ref: ticket_messages.ticket_id > tickets.id [delete: cascade]
+Ref: ticket_messages.user_id > users.id [delete: cascade]
+
+// Подписки на авторов/магазины (полиморфные - связи на уровне приложения)
+Ref: follows.follower_user_id > users.id [delete: cascade]
+
+// Жалобы (полиморфные - связи на уровне приложения)
+Ref: reports.reporter_user_id > users.id [delete: cascade]
+Ref: reports.reviewed_by > users.id [delete: set null]
+
+// Адреса авторов
+Ref: author_addresses.author_id > authors.id [delete: cascade]
+
+// Возвраты
+Ref: refunds.order_id > orders.id [delete: cascade]
+Ref: refunds.payment_id > payments.id [delete: restrict]
+Ref: refunds.order_item_id > order_items.id [delete: set null]
+Ref: refunds.requested_by > users.id [delete: cascade]
+Ref: refunds.reviewed_by > users.id [delete: set null]
+
+// Аудит (полиморфные - связи на уровне приложения)
+Ref: activity_logs.user_id > users.id [delete: set null]
+
+// Пользователи
+Ref: sessions.user_id > users.id [delete: cascade]

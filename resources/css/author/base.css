@@ -1,0 +1,21 @@
+/* Author Zone Base Styles */
+
+:root {
+    /* Author zone color scheme */
+    --author-primary: #5b95bd;
+    --author-primary-hover: #4a7a9e;
+    --author-bg: #f9fafb;
+    --author-sidebar: #1f2937;
+    --author-border: rgba(61, 57, 53, 0.08);
+    
+    /* Text colors */
+    --author-text-primary: #3d3935;
+    --author-text-secondary: #6b7280;
+    --author-text-light: #9ca3af;
+}
+
+.author-layout {
+    background-color: var(--author-bg);
+    min-height: 100vh;
+    font-family: 'Onest', 'Arial', sans-serif;
+}
