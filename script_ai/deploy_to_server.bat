@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Скрипт развертывания Laravel проекта на сервер moonny.art
 REM PHP 8.3 находится по адресу /opt/php83/bin/php
 
