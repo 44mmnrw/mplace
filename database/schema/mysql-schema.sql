@@ -1473,3 +1473,4 @@ CREATE TABLE `wishlists` (
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (1,'2024_02_04_000001_create_shops_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (2,'2024_02_04_000002_update_products_add_shop_id',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (3,'2024_02_04_000003_update_shops_change_user_to_author',2);
+""

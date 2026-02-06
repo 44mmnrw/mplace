@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Services\SkuGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class MasterclassController extends Controller
 {
@@ -64,10 +65,17 @@ class MasterclassController extends Controller
             'discount' => 'nullable|numeric|min:0|max:100',
             'skills' => 'nullable|array',
             'skills.*' => 'string|max:255',
+            'main_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+            'gallery_images' => 'nullable|array|max:8',
+            'gallery_images.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
         // TODO: Get actual author_id from authenticated user
         $authorId = 1;
+
+        // Generate SKU
+        $skuGenerator = new SkuGeneratorService();
+        $sku = $skuGenerator->generate($validated['primary_category_id']);
 
         // Create product
         $product = Product::create([
@@ -76,6 +84,7 @@ class MasterclassController extends Controller
             'difficulty_level_id' => $validated['difficulty_level_id'] ?? null,
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
+            'sku' => $sku,
             'short_description' => $validated['short_description'] ?? '',
             'description' => $validated['description'] ?? '',
             'format' => $validated['format'] ?? null,
@@ -95,6 +104,31 @@ class MasterclassController extends Controller
             'old_price' => $validated['old_price'] ?? null,
             'is_active' => true,
         ]);
+
+        // Handle main image upload
+        if ($request->hasFile('main_image')) {
+            $mainImage = $request->file('main_image');
+            $mainImagePath = $mainImage->store('products/images', 'public');
+            
+            $product->images()->create([
+                'image_path' => $mainImagePath,
+                'is_main' => true,
+                'sort_order' => 0,
+            ]);
+        }
+
+        // Handle gallery images upload
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $index => $image) {
+                $imagePath = $image->store('products/images', 'public');
+                
+                $product->images()->create([
+                    'image_path' => $imagePath,
+                    'is_main' => false,
+                    'sort_order' => $index + 1,
+                ]);
+            }
+        }
 
         return redirect()
             ->route('author.masterclasses.edit', $product->id)
@@ -141,6 +175,12 @@ class MasterclassController extends Controller
             'discount' => 'nullable|numeric|min:0|max:100',
             'skills' => 'nullable|array',
             'skills.*' => 'string|max:255',
+            'main_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+            'gallery_images' => 'nullable|array|max:8',
+            'gallery_images.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
+            'delete_images' => 'nullable|array',
+            'delete_images.*' => 'exists:product_images,id',
+            'images_order' => 'nullable|json',
         ]);
 
         // Если категория изменилась, перегенерируем SKU
@@ -185,6 +225,68 @@ class MasterclassController extends Controller
             ]);
         }
 
+        // Handle image deletions
+        if (!empty($validated['delete_images'])) {
+            $imagesToDelete = $product->images()->whereIn('id', $validated['delete_images'])->get();
+            foreach ($imagesToDelete as $image) {
+                // Delete file from storage
+                if (\Storage::disk('public')->exists($image->image_path)) {
+                    \Storage::disk('public')->delete($image->image_path);
+                }
+                $image->delete();
+            }
+        }
+
+        // Handle new main image upload
+        if ($request->hasFile('main_image')) {
+            // Delete old main image if exists
+            $oldMainImage = $product->mainImage;
+            if ($oldMainImage) {
+                if (\Storage::disk('public')->exists($oldMainImage->image_path)) {
+                    \Storage::disk('public')->delete($oldMainImage->image_path);
+                }
+                $oldMainImage->delete();
+            }
+            
+            $mainImage = $request->file('main_image');
+            $mainImagePath = $mainImage->store('products/images', 'public');
+            
+            $product->images()->create([
+                'image_path' => $mainImagePath,
+                'is_main' => true,
+                'sort_order' => 0,
+            ]);
+        }
+
+        // Handle new gallery images upload
+        if ($request->hasFile('gallery_images')) {
+            $currentMaxOrder = $product->images()->where('is_main', false)->max('sort_order') ?? 0;
+            
+            foreach ($request->file('gallery_images') as $index => $image) {
+                $imagePath = $image->store('products/images', 'public');
+                
+                $product->images()->create([
+                    'image_path' => $imagePath,
+                    'is_main' => false,
+                    'sort_order' => $currentMaxOrder + $index + 1,
+                ]);
+            }
+        }
+
+        // Handle images reordering
+        if ($request->has('images_order') && !empty($request->images_order)) {
+            $imagesOrder = json_decode($request->images_order, true);
+            
+            if (is_array($imagesOrder)) {
+                foreach ($imagesOrder as $index => $imageId) {
+                    $product->images()->where('id', $imageId)->update([
+                        'sort_order' => $index + 1,
+                        'is_main' => $index === 0,
+                    ]);
+                }
+            }
+        }
+
         return redirect()
             ->route('author.masterclasses.edit', $product->id)
             ->with('success', 'Мастер-класс успешно обновлен!');
@@ -213,10 +315,22 @@ class MasterclassController extends Controller
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
+        
+        // Delete related data before deleting the product
+        // Images (if any)
+        $product->images()->delete();
+        
+        // Prices
+        $product->prices()->delete();
+        
+        // Category relations (many-to-many)
+        $product->categories()->detach();
+        
+        // Delete the product (soft delete)
         $product->delete();
 
         return redirect()
-            ->route('author.dashboard')
+            ->route('author.masterclasses.index')
             ->with('success', 'Мастер-класс успешно удален!');
     }
 }

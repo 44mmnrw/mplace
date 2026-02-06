@@ -64,42 +64,52 @@
             <div class="form-section">
                 <h2 class="form-section__title">Изображения</h2>
                 
-                {{-- Main Image with Add Button --}}
                 <div class="form-group">
-                    <label class="form-label">Главное изображение *</label>
-                    <div class="images-row">
-                        <div class="image-upload-main">
-                            <div class="image-upload-main__placeholder"></div>
-                        </div>
-                        <div class="gallery-item gallery-item--add">
+                    <div class="gallery-header">
+                        <label class="form-label">Изображения мастер-класса *</label>
+                        <span class="gallery-counter" id="gallery-counter">
+                            @php
+                                $totalCount = $isEdit ? $product->images()->count() : 0;
+                            @endphp
+                            <span id="current-count">{{ $totalCount }}</span> из 8
+                        </span>
+                    </div>
+                    <p class="form-hint" style="margin-bottom: 15px;">Перетащите файлы или нажмите "Добавить". Первое изображение — главное. Меняйте порядок перетаскиванием</p>
+                    
+                    <div class="gallery-grid" id="gallery-grid">
+                        @if($isEdit)
+                            @foreach($product->images()->orderBy('is_main', 'desc')->orderBy('sort_order')->get() as $image)
+                            <div class="gallery-item" data-image-id="{{ $image->id }}" draggable="true">
+                                <img src="{{ asset('storage/' . $image->image_path) }}" alt="Gallery image">
+                                @if($image->is_main)
+                                    <span class="image-badge">Главное</span>
+                                @endif
+                                <button type="button" class="image-remove" onclick="removeGalleryImage({{ $image->id }})">×</button>
+                            </div>
+                            @endforeach
+                        @endif
+                        
+                        <label for="gallery-images-input" class="gallery-item gallery-item--add" style="cursor: pointer;" id="gallery-add-btn">
+                            <input type="file" id="gallery-images-input" name="gallery_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" multiple style="display: none;" onchange="previewGalleryImages(event)">
                             <svg class="gallery-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                             <span class="gallery-item__text">Добавить</span>
-                        </div>
+                        </label>
                     </div>
-                </div>
-
-                {{-- Gallery --}}
-                <div class="form-group">
-                    <div class="gallery-header">
-                        <label class="form-label">Галерея изображений</label>
-                        <span class="gallery-counter">3 из 8</span>
-                    </div>
-                    <div class="gallery-grid">
-                        <div class="gallery-item">
-                            <img src="https://www.figma.com/api/mcp/asset/21ea8558-e9e9-49ef-a625-5178fc2331d6" alt="Gallery 1">
-                        </div>
-                        <div class="gallery-item"></div>
-                        <div class="gallery-item">
-                            <img src="https://www.figma.com/api/mcp/asset/21ea8558-e9e9-49ef-a625-5178fc2331d6" alt="Gallery 2">
-                        </div>
-                        <div class="gallery-item">
-                            <img src="https://www.figma.com/api/mcp/asset/b1936555-1cc6-456b-b798-5819b47f5100" alt="Add image">
-                        </div>
-                    </div>
-                    <p class="form-hint">Добавьте от 3 до 8 изображений работ из мастер-класса</p>
+                    @error('gallery_images')
+                        <span class="form-error">{{ $message }}</span>
+                    @enderror
+                    @error('gallery_images.*')
+                        <span class="form-error">{{ $message }}</span>
+                    @enderror
+                    
+                    {{-- Hidden inputs for deleted images --}}
+                    <div id="deleted-images-container"></div>
+                    
+                    {{-- Hidden input for images order --}}
+                    <input type="hidden" name="images_order" id="images-order" value="">
                 </div>
             </div>
 
@@ -345,6 +355,289 @@
 
 @push('scripts')
 <script>
+let galleryFiles = {};
+let galleryFileIdCounter = 0;
+let draggedElement = null;
+
+// Initialize drag and drop on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initDragAndDrop();
+    updateMainBadge();
+});
+
+// File upload drag and drop
+function initDragAndDrop() {
+    const grid = document.getElementById('gallery-grid');
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        grid.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    // Highlight drop area
+    ['dragenter', 'dragover'].forEach(eventName => {
+        grid.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        grid.addEventListener(eventName, unhighlight, false);
+    });
+    
+    // Handle dropped files
+    grid.addEventListener('drop', handleDrop, false);
+}
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight(e) {
+    // Показываем подсказку только если перетаскиваются файлы, а не элементы страницы
+    if (e.dataTransfer.types.includes('Files')) {
+        const grid = document.getElementById('gallery-grid');
+        grid.classList.add('gallery-grid--drag-over');
+    }
+}
+
+function unhighlight(e) {
+    const grid = document.getElementById('gallery-grid');
+    grid.classList.remove('gallery-grid--drag-over');
+}
+
+function handleDrop(e) {
+    const grid = document.getElementById('gallery-grid');
+    grid.classList.remove('gallery-grid--drag-over');
+    
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        handleFiles(files);
+    }
+}
+
+function handleFiles(files) {
+    const fileArray = Array.from(files);
+    const grid = document.getElementById('gallery-grid');
+    const addButton = grid.querySelector('.gallery-item--add');
+    
+    fileArray.forEach((file) => {
+        // Check if file is image
+        if (!file.type.startsWith('image/')) {
+            alert('Можно загружать только изображения');
+            return;
+        }
+        
+        // Check total limit
+        const currentCount = grid.querySelectorAll('.gallery-item:not(.gallery-item--add)').length;
+        if (currentCount >= 8) {
+            alert('Максимум 8 изображений');
+            return;
+        }
+        
+        const fileId = galleryFileIdCounter++;
+        galleryFiles[fileId] = file;
+        
+        const isFirst = currentCount === 0;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.createElement('div');
+            preview.className = 'gallery-item gallery-item--new';
+            preview.dataset.fileId = fileId;
+            preview.draggable = true;
+            preview.innerHTML = `
+                <img src="${e.target.result}" alt="New image">
+                ${isFirst ? '<span class="image-badge">Главное</span>' : ''}
+                <button type="button" class="image-remove" onclick="removeNewGalleryImage(this)">×</button>
+            `;
+            
+            // Add drag event listeners
+            addDragListeners(preview);
+            
+            grid.insertBefore(preview, addButton);
+            updateGalleryCounter();
+            updateMainBadge();
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    updateGalleryFileInput();
+}
+
+function previewGalleryImages(event) {
+    handleFiles(event.target.files);
+    event.target.value = '';
+}
+
+function removeGalleryImage(imageId) {
+    if (!confirm('Удалить это изображение?')) return;
+    
+    const container = document.getElementById('deleted-images-container');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'delete_images[]';
+    input.value = imageId;
+    container.appendChild(input);
+    
+    const item = document.querySelector(`[data-image-id="${imageId}"]`);
+    if (item) {
+        item.remove();
+        updateGalleryCounter();
+        updateMainBadge();
+        updateImagesOrder();
+    }
+}
+
+function removeNewGalleryImage(button) {
+    const item = button.parentElement;
+    const fileId = item.dataset.fileId;
+    
+    if (fileId !== undefined) {
+        delete galleryFiles[fileId];
+        updateGalleryFileInput();
+    }
+    
+    item.remove();
+    updateGalleryCounter();
+    updateMainBadge();
+}
+
+// Drag and drop for reordering
+function addDragListeners(element) {
+    element.addEventListener('dragstart', handleDragStart);
+    element.addEventListener('dragend', handleDragEnd);
+    element.addEventListener('dragover', handleDragOver);
+    element.addEventListener('drop', handleDropReorder);
+    element.addEventListener('dragenter', handleDragEnter);
+    element.addEventListener('dragleave', handleDragLeave);
+}
+
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    
+    const grid = document.getElementById('gallery-grid');
+    grid.classList.remove('gallery-grid--drag-over');
+    
+    const items = document.querySelectorAll('.gallery-item:not(.gallery-item--add)');
+    items.forEach(item => item.classList.remove('drag-over'));
+    
+    updateMainBadge();
+    updateImagesOrder();
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    if (this.classList.contains('gallery-item--add')) return;
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDropReorder(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    const grid = document.getElementById('gallery-grid');
+    grid.classList.remove('gallery-grid--drag-over');
+    
+    if (this.classList.contains('gallery-item--add')) return;
+    
+    if (draggedElement !== this) {
+        const allItems = [...grid.querySelectorAll('.gallery-item:not(.gallery-item--add)')];
+        const draggedIndex = allItems.indexOf(draggedElement);
+        const targetIndex = allItems.indexOf(this);
+        
+        if (draggedIndex < targetIndex) {
+            this.parentNode.insertBefore(draggedElement, this.nextSibling);
+        } else {
+            this.parentNode.insertBefore(draggedElement, this);
+        }
+    }
+    
+    this.classList.remove('drag-over');
+    return false;
+}
+
+// Update "Главное" badge on first image
+function updateMainBadge() {
+    const grid = document.getElementById('gallery-grid');
+    const items = grid.querySelectorAll('.gallery-item:not(.gallery-item--add)');
+    
+    items.forEach((item, index) => {
+        const existingBadge = item.querySelector('.image-badge');
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+        
+        if (index === 0) {
+            const badge = document.createElement('span');
+            badge.className = 'image-badge';
+            badge.textContent = 'Главное';
+            item.insertBefore(badge, item.firstChild);
+        }
+    });
+}
+
+// Update hidden input with images order
+function updateImagesOrder() {
+    const grid = document.getElementById('gallery-grid');
+    const items = grid.querySelectorAll('.gallery-item:not(.gallery-item--add)');
+    const order = [];
+    
+    items.forEach((item) => {
+        const imageId = item.dataset.imageId;
+        if (imageId) {
+            order.push(parseInt(imageId));
+        }
+    });
+    
+    document.getElementById('images-order').value = JSON.stringify(order);
+}
+
+// Add drag listeners to existing images on load
+document.addEventListener('DOMContentLoaded', function() {
+    const existingItems = document.querySelectorAll('.gallery-item[data-image-id]');
+    existingItems.forEach(addDragListeners);
+});
+
+function updateGalleryFileInput() {
+    const input = document.getElementById('gallery-images-input');
+    const dataTransfer = new DataTransfer();
+    
+    // Add all files from object to DataTransfer
+    Object.values(galleryFiles).forEach(file => {
+        dataTransfer.items.add(file);
+    });
+    
+    input.files = dataTransfer.files;
+}
+
+function updateGalleryCounter() {
+    const grid = document.getElementById('gallery-grid');
+    const count = grid.querySelectorAll('.gallery-item:not(.gallery-item--add)').length;
+    document.getElementById('current-count').textContent = count;
+}
+
 function addSkill() {
     const input = document.getElementById('new-skill-input');
     const skillText = input.value.trim();
