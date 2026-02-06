@@ -66,7 +66,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Загрузка собранного фронтенда...
-scp -r public/build moonny_art_usr@212.113.120.197:/var/www/moonny_art_usr/data/www/moonny.art/public/
+scp -r ../public/build moonny_art_usr@212.113.120.197:/var/www/moonny_art_usr/data/www/moonny.art/public/
 if %errorlevel% neq 0 (
     echo ОШИБКА: Не удалось загрузить фронтенд
     pause
