@@ -8,6 +8,7 @@ export default defineConfig({
                 'resources/css/front/app.css',
                 'resources/js/front/app.js',
                 'resources/css/author/app.css',
+                'resources/css/author/auth.css',
                 'resources/js/author/app.js',
             ],
             refresh: [
