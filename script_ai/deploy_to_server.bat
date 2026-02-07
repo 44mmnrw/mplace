@@ -75,7 +75,7 @@ echo.
 
 REM Загрузка проекта через Git pull
 echo [6/12] Обновление кода на сервере через Git (ветка %BRANCH%)...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && git fetch origin && git checkout %BRANCH% && git pull origin %BRANCH% --ff-only"
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && git reset --hard HEAD && git clean -fd && git fetch origin && git checkout %BRANCH% && git pull origin %BRANCH% --ff-only"
 if %errorlevel% neq 0 (
     echo Ошибка: не удалось обновить код через Git
     exit /b 1
