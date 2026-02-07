@@ -12,7 +12,7 @@ set SERVER=212.113.120.197
 set USER=moonny_art_usr
 set REMOTE_PATH=/var/www/moonny_art_usr/data/www/moonny.art
 set PHP=/opt/php83/bin/php
-set BRANCH=main
+set BRANCH=dev
 
 REM Получение текущей даты и времени
 for /f "tokens=*" %%i in ('powershell -Command "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"') do set DATETIME=%%i
