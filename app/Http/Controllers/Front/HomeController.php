@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Author;
+use App\Models\HeroBannerImage;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -35,7 +36,24 @@ class HomeController extends Controller
             }])
             ->orderBy('sort_order')
             ->get();
+
+        // Картинки для hero-баннера
+        $heroBannerColumn1 = HeroBannerImage::active()
+            ->column(1)
+            ->orderBy('position')
+            ->get();
+
+        $heroBannerColumn2 = HeroBannerImage::active()
+            ->column(2)
+            ->orderBy('position')
+            ->get();
         
-        return view('front.home', compact('popularClasses', 'topMasters', 'categories'));
+        return view('front.home', compact(
+            'popularClasses',
+            'topMasters',
+            'categories',
+            'heroBannerColumn1',
+            'heroBannerColumn2'
+        ));
     }
 }

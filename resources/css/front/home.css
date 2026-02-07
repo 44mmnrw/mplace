@@ -5,12 +5,15 @@
     padding: 96px 0;
     background: linear-gradient(156.5deg, rgba(216, 232, 243, 0.3) 0%, rgba(216, 232, 243, 0.2) 50%, var(--bg-main) 100%);
     overflow: hidden;
+    min-height: 60vh;
+    max-height: 80vh;
 }
 
 .hero-content {
     display: flex;
     gap: 48px;
     align-items: center;
+    height: 100%;
 }
 
 .hero-text {
@@ -95,42 +98,61 @@
 
 /* Hero Images */
 .hero-images {
-    flex: 1;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 600px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+    height: min(544px, 50vh);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Градиентные маски для затемнения */
+.hero-images::before,
+.hero-images::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 80px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hero-images::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--bg-main) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.hero-images::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg-main) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 .hero-images-col {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
 }
 
-.hero-images-col-offset {
-    margin-top: 48px;
+/* Пауза анимации при наведении */
+.hero-images:hover .hero-images-col {
+    animation-play-state: paused;
 }
 
 .hero-image {
+    width: 100%;
+    height: 224px;
     border-radius: 16px;
     background: var(--bg-card);
     box-shadow: var(--shadow-card);
-}
-
-.hero-image-1 {
-    height: 192px;
-}
-
-.hero-image-2 {
-    height: 256px;
-}
-
-.hero-image-3 {
-    height: 256px;
-}
-
-.hero-image-4 {
-    height: 192px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 /* Section Styles */

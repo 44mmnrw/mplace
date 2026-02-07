@@ -52,3 +52,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Hero banner infinite scroll
+function initHeroBannerScroll() {
+    const columns = document.querySelectorAll('.hero-images-col');
+    if (!columns.length) return;
+    
+    columns.forEach(column => {
+        const direction = column.getAttribute('data-scroll-direction');
+        if (!direction) return;
+        
+        const originalImages = Array.from(column.children);
+        if (originalImages.length === 0) return;
+        
+        // Клонируем картинки для бесконечного цикла
+        originalImages.forEach(img => {
+            column.appendChild(img.cloneNode(true));
+        });
+        
+        const speed = 0.3; // пикселей за кадр
+        const imageHeight = 224; // высота картинки
+        const gap = 16; // gap между картинками
+        const itemHeight = imageHeight + gap;
+        const totalHeight = originalImages.length * itemHeight;
+        
+        // Для "up" начинаем с отрицательной позиции
+        let offset = direction === 'up' ? -totalHeight : 0;
+        
+        function animate() {
+            if (direction === 'down') {
+                offset += speed;
+                if (offset >= totalHeight) {
+                    offset = 0;
+                }
+                column.style.transform = `translateY(${-offset}px)`;
+            } else {
+                offset += speed;
+                if (offset >= 0) {
+                    offset = -totalHeight;
+                }
+                column.style.transform = `translateY(${offset}px)`;
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    });
+}
+
+// Инициализация после загрузки DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroBannerScroll);
+} else {
+    initHeroBannerScroll();
+}

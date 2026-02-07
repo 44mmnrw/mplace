@@ -38,13 +38,21 @@
                     </div>
                 </div>
                 <div class="hero-images">
-                    <div class="hero-images-col">
-                        <div class="hero-image hero-image-1"></div>
-                        <div class="hero-image hero-image-2"></div>
+                    <div class="hero-images-col" data-scroll-direction="down">
+                        @forelse($heroBannerColumn1 as $image)
+                        <div class="hero-image" style="background-image: url('{{ $image->image_url }}');"></div>
+                        @empty
+                        <div class="hero-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                        <div class="hero-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                        @endforelse
                     </div>
-                    <div class="hero-images-col hero-images-col-offset">
-                        <div class="hero-image hero-image-3"></div>
-                        <div class="hero-image hero-image-4"></div>
+                    <div class="hero-images-col" data-scroll-direction="up">
+                        @forelse($heroBannerColumn2 as $image)
+                        <div class="hero-image" style="background-image: url('{{ $image->image_url }}');"></div>
+                        @empty
+                        <div class="hero-image" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
+                        <div class="hero-image" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
+                        @endforelse
                     </div>
                 </div>
             </div>
