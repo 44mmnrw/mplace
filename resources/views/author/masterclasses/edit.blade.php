@@ -466,7 +466,7 @@ function handleFiles(files) {
 
 function previewGalleryImages(event) {
     handleFiles(event.target.files);
-    event.target.value = '';
+    // НЕ очищаем input.value здесь - updateGalleryFileInput() сделает это корректно
 }
 
 function removeGalleryImage(imageId) {
