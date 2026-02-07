@@ -17,25 +17,19 @@ Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog');
 // Детальная страница мастер-класса
 Route::get('/masterclass/{id}', [MasterclassController::class, 'show'])->name('masterclass.show');
 
-// Временные маршруты (будут реализованы позже)
-Route::get('/login', function () {
-    return view('front.home');
-})->name('login');
-
-Route::get('/register', function () {
-    return view('front.home');
-})->name('register');
-
-Route::get('/masters', function () {
-    return view('front.home');
-})->name('masters');
-
-Route::get('/blog', function () {
-    return view('front.home');
-})->name('blog');
+// Временные маршруты (используют HomeController для корректной передачи данных)
+Route::get('/login', [HomeController::class, 'index'])->name('login');
+Route::get('/register', [HomeController::class, 'index'])->name('register');
+Route::get('/masters', [HomeController::class, 'index'])->name('masters');
+Route::get('/blog', [HomeController::class, 'index'])->name('blog');
 
 // Author Admin Routes
 Route::prefix('author')->name('author.')->group(function () {
+    // Test Lottie (временный маршрут)
+    Route::get('/test-lottie', function () {
+        return view('author.test-lottie');
+    })->name('test.lottie');
+    
     // Authentication Routes (без middleware)
     Route::prefix('auth')->name('auth.')->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -45,8 +39,8 @@ Route::prefix('author')->name('author.')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     });
     
-    // Защищённые маршруты (требуют авторизации)
-    Route::middleware('auth')->group(function () {
+    // Защищённые маршруты (требуют авторизации и профиля автора)
+    Route::middleware(['auth', 'author'])->group(function () {
         Route::get('/dashboard', [AuthorDashboardController::class, 'index'])->name('dashboard');
         
         // Masterclass Management

@@ -161,4 +161,12 @@ class Product extends Model
     {
         return $this->hasMany(ProductAttributeValue::class);
     }
+
+    /**
+     * Get reviews for this product
+     */
+    public function reviews()
+    {
+        return $this->morphMany('App\Models\Review', 'reviewable')->latest();
+    }
 }

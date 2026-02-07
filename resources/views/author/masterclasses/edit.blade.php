@@ -80,7 +80,7 @@
                         @if($isEdit)
                             @foreach($product->images()->orderBy('is_main', 'desc')->orderBy('sort_order')->get() as $image)
                             <div class="gallery-item" data-image-id="{{ $image->id }}" draggable="true">
-                                <img src="{{ asset('storage/' . $image->image_path) }}" alt="Gallery image">
+                                <x-product-image :src="$image->image_url" alt="Gallery image" />
                                 @if($image->is_main)
                                     <span class="image-badge">Главное</span>
                                 @endif
@@ -91,10 +91,7 @@
                         
                         <label for="gallery-images-input" class="gallery-item gallery-item--add" style="cursor: pointer;" id="gallery-add-btn">
                             <input type="file" id="gallery-images-input" name="gallery_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" multiple style="display: none;" onchange="previewGalleryImages(event)">
-                            <svg class="gallery-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
+                            <x-icon name="icon-plus" class="gallery-item__icon" size="32" />
                             <span class="gallery-item__text">Добавить</span>
                         </label>
                     </div>

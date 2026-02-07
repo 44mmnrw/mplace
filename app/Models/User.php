@@ -49,4 +49,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the author profile associated with the user
+     */
+    public function author()
+    {
+        return $this->hasOne(Author::class);
+    }
 }

@@ -51,11 +51,13 @@
                 <tr class="masterclass-row">
                     <td>
                         <div class="masterclass-info">
-                            @if($product->mainImage)
-                            <img src="{{ $product->mainImage->url }}" alt="{{ $product->title }}" class="masterclass-thumb">
-                            @else
-                            <img src="https://images.unsplash.com/photo-1582131503261-fca1d1c0589f?w=48&h=48&fit=crop" alt="Изображение" class="masterclass-thumb">
-                            @endif
+                            <div class="masterclass-thumb-wrapper">
+                                @if($product->mainImage)
+                                    <x-product-image :src="$product->mainImage->image_url" :alt="$product->title" class="masterclass-thumb" />
+                                @else
+                                    <x-product-image src="placeholder:lottie" alt="Изображение" class="masterclass-thumb" />
+                                @endif
+                            </div>
                             <div>
                                 <div class="masterclass-name">{{ $product->title }}</div>
                                 <div class="masterclass-category">{{ $product->primaryCategory->name ?? 'Категория не указана' }}</div>

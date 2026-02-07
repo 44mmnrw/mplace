@@ -14,6 +14,7 @@ class Author extends Model
         'user_id',
         'display_name',
         'slug',
+        'avatar',
         'about',
         'social_links',
         'masterclasses_count',

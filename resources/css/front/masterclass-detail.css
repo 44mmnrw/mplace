@@ -98,6 +98,8 @@
     transition: all 0.2s;
     background: none;
     padding: 0;
+    display: block;
+    text-decoration: none;
 }
 
 .gallery-thumbs .thumb:hover {

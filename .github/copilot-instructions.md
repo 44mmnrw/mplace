@@ -182,6 +182,71 @@ class CatalogController extends Controller
 - Полиморфные связи: `reviews` (Product/Shop/Author/Customer), `follows` (Author/Shop), `reports` (любые сущности)
 - Денормализация для производительности: `rating`, `reviews_count`, `sales_count` в products
 
+## Система производства миниатюр изображений
+
+### Описание
+Автоматическая генерация миниатюр при загрузке изображений товаров. Использует **Intervention Image v3** с GD driver.
+
+### Структура размеров
+```
+const SIZES = [
+    'thumb'  => ['width' => 100, 'height' => 100],   // Галерея миниатюр
+    'medium' => ['width' => 400, 'height' => 300],   // Просмотр в модалях
+    'large'  => ['width' => 800, 'height' => 600],   // Основное изображение
+];
+```
+
+### Расположение файлов
+```
+storage/app/public/products/images/
+└── {product_id}/
+    └── {YYYY-MM}/
+        ├── originals/          # Оригинальные файлы (полный размер)
+        │   └── {hash}.{ext}
+        ├── thumb/              # Миниатюры 100x100
+        │   └── {hash}-thumb.{ext}
+        ├── medium/             # Средние 400x300
+        │   └── {hash}-medium.{ext}
+        └── large/              # Большие 800x600
+            └── {hash}-large.{ext}
+```
+
+### Как работает масштабирование
+- **Метод**: `scaleDown()` — сохраняет пропорции, вписывает в "ящик"
+- **Принцип**: Если оригинал 2000×1500 → для large (800×600) делает 800×600
+- **Качество**: JPEG с качеством 85 (баланс размер/качество)
+- **Не увеличивает**: Если оригинал меньше целевого размера, оставляет как есть
+
+### Интеграция в контроллер
+```php
+// В Author/MasterclassController@store и @update
+if ($request->hasFile('main_image')) {
+    $imageService = new ImageThumbnailService();
+    $paths = $imageService->uploadAndCreateThumbnails(
+        $request->file('main_image'),
+        "products/images/{$product->id}/" . now()->format('Y-m')
+    );
+    // $paths['original', 'thumb', 'medium', 'large']
+}
+```
+
+### Вывод на фронте
+```php
+// В модели ProductImage
+$image->getThumbnailUrl('thumb');   // Возвращает путь без asset()
+$image->getThumbnailUrl('large');   // Путь к большой версии
+
+// В Blade (компонент автоматически добавит asset)
+<x-product-image :src="$image->getThumbnailUrl('medium')" />
+```
+
+### Важные моменты
+- ✅ Флаг `is_main=1` должен быть установлен для главного изображения (первое автоматически если не загружено отдельное)
+- ✅ Миниатюры создаются **при загрузке** (синхронно, не в очереди)
+- ✅ Для существующих изображений: `php artisan thumbnails:generate`
+- ✅ При удалении продукта удаляются все размеры через `ImageThumbnailService::deleteWithThumbnails()`
+- ⚠️ Компонент `x-product-image` автоматически обворачивает пути в `asset('storage/')` и проверяет полный ли это URL
+
 ## Развертывание на продакшн-сервере
 
 ### Информация о сервере

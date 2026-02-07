@@ -12,6 +12,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        return view('author.dashboard');
+        $author = auth()->user()->author;
+        
+        return view('author.dashboard', compact('author'));
     }
 }

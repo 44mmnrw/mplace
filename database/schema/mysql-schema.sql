@@ -158,6 +158,7 @@ CREATE TABLE `authors` (
   `user_id` bigint unsigned NOT NULL,
   `display_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `about` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `social_links` json DEFAULT NULL,
   `masterclasses_count` int NOT NULL DEFAULT '0',
@@ -1130,6 +1131,7 @@ CREATE TABLE `products` (
   KEY `products_difficulty_level_id_foreign` (`difficulty_level_id`),
   KEY `products_shop_id_index` (`author_id`),
   FULLTEXT KEY `products_title_description_fulltext` (`title`,`description`),
+  CONSTRAINT `products_author_id_foreign` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `products_difficulty_level_id_foreign` FOREIGN KEY (`difficulty_level_id`) REFERENCES `difficulty_levels` (`id`) ON DELETE SET NULL,
   CONSTRAINT `products_primary_category_id_foreign` FOREIGN KEY (`primary_category_id`) REFERENCES `categories` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Мастер-классы и цифровые товары. SKU артикул. shop_id или author_id';
@@ -1473,4 +1475,3 @@ CREATE TABLE `wishlists` (
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (1,'2024_02_04_000001_create_shops_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (2,'2024_02_04_000002_update_products_add_shop_id',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (3,'2024_02_04_000003_update_shops_change_user_to_author',2);
-""

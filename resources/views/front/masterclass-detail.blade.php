@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Уютные домашние носки спицами: пошаговый мастер-класс')
+@section('title', $product->title)
 
 @section('content')
 <main class="masterclass-detail">
@@ -8,13 +8,15 @@
         <!-- Breadcrumbs with Share -->
         <div class="breadcrumbs-wrapper">
             <nav class="breadcrumbs">
-                <a href="/">Главная</a>
+                <a href="{{ route('home') }}">Главная</a>
                 <span>/</span>
-                <a href="/catalog">Мастер-классы</a>
+                <a href="{{ route('catalog') }}">Мастер-классы</a>
+                @if($product->primaryCategory)
                 <span>/</span>
-                <a href="/catalog?category=knitting">Вязание</a>
+                <a href="{{ route('catalog', ['category' => $product->primaryCategory->slug]) }}">{{ $product->primaryCategory->name }}</a>
+                @endif
                 <span>/</span>
-                <span>Уютные домашние носки спицами</span>
+                <span>{{ $product->title }}</span>
             </nav>
             <span class="share-label">Поделиться</span>
         </div>
@@ -26,410 +28,243 @@
                 <!-- Gallery -->
                 <div class="masterclass-gallery">
                     <div class="gallery-main">
-                        <img src="https://images.unsplash.com/photo-1582131503261-fca1d1c0589f?w=800&h=600&fit=crop" alt="Мастер-класс">
+                        @if($product->mainImage)
+                            <x-product-image :src="$product->mainImage->getThumbnailUrl('large')" :alt="$product->title" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" />
+                        @else
+                            <x-product-image src="placeholder:lottie" :alt="$product->title" style="width: 100%; height: 100%;" />
+                        @endif
                     </div>
+                    @if($product->images->count() > 0)
                     <div class="gallery-thumbs">
-                        <button class="thumb active">
-                            <img src="https://images.unsplash.com/photo-1582131503261-fca1d1c0589f?w=100&h=100&fit=crop" alt="Превью 1">
-                        </button>
-                        <button class="thumb">
-                            <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=100&h=100&fit=crop" alt="Превью 2">
-                        </button>
-                        <button class="thumb">
-                            <img src="https://images.unsplash.com/photo-1558618047-f4b511ab5f6d?w=100&h=100&fit=crop" alt="Превью 3">
-                        </button>
-                        <button class="thumb">
-                            <img src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=100&h=100&fit=crop" alt="Превью 4">
-                        </button>
-                        <button class="thumb">
-                            <img src="https://images.unsplash.com/photo-1582131503261-fca1d1c0589f?w=100&h=100&fit=crop" alt="Превью 5">
-                        </button>
+                        @foreach($product->images as $index => $image)
+                        <a href="{{ asset('storage/' . $image->getThumbnailUrl('thumb')) }}" class="thumb {{ $index === 0 ? 'active' : '' }}" data-full-src="{{ asset('storage/' . $image->getThumbnailUrl('large')) }}" data-medium-src="{{ asset('storage/' . $image->getThumbnailUrl('medium')) }}" target="_blank" rel="noopener">
+                            <x-product-image :src="$image->getThumbnailUrl('thumb')" :alt="$product->title . ' - превью ' . ($index + 1)" style="width: 100%; height: 100%; object-fit: cover;" />
+                        </a>
+                        @endforeach
                     </div>
+                    @endif
                 </div>
 
                 <!-- Description Section -->
                 <section class="masterclass-description">
                     <h2>Описание</h2>
-                    <p>Этот мастер-класс создан для всех, кто хочет освоить технику вязания уютных домашних носков. Подробные пошаговые инструкции помогут вам создать идеальную пару даже с нуля.</p>
-                    <p>В мастер-классе вы узнаете о выборе пряжи, расчёте петель на любой размер, технике вязания пятки «бумеранг» и красивой отделке мыска. Все этапы сопровождаются фотографиями и схемами.</p>
+                    {!! nl2br(e($product->description)) !!}
                     
+                    @if($product->requirements)
                     <h3>Формат обучения</h3>
-                    <p>PDF-файл с инструкциями, который вы можете скачать сразу после покупки. Документ содержит 24 страницы с пошаговыми фото и схемами.</p>
+                    <p>{{ $product->requirements }}</p>
+                    @endif
                 </section>
 
                 <!-- Materials Section -->
+                @if($product->materials)
                 <section class="masterclass-materials">
                     <h2>Необходимые материалы</h2>
                     <div class="materials-grid">
-                        <div class="material-item">
-                            <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
-                                <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                            </svg>
-                            <span>Пряжа для носков (75% шерсть, 25% полиамид) — 100 г</span>
-                        </div>
-                        <div class="material-item">
-                            <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
-                                <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                            </svg>
-                            <span>Спицы чулочные №2.5 или №3</span>
-                        </div>
-                        <div class="material-item">
-                            <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
-                                <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                            </svg>
-                            <span>Маркеры для вязания</span>
-                        </div>
-                        <div class="material-item">
-                            <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
-                                <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                            </svg>
-                            <span>Игла для сшивания трикотажа</span>
-                        </div>
-                        <div class="material-item">
-                            <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
-                                <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                            </svg>
-                            <span>Ножницы</span>
-                        </div>
-                        <div class="material-item">
-                            <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
-                                <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                            </svg>
-                            <span>Сантиметровая лента</span>
-                        </div>
+                        @foreach(explode("\n", $product->materials) as $material)
+                            @if(trim($material))
+                            <div class="material-item">
+                                <svg class="material-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+                                    <circle cx="10" cy="10" r="3" fill="currentColor"/>
+                                </svg>
+                                <span>{{ trim($material) }}</span>
+                            </div>
+                            @endif
+                        @endforeach
                     </div>
                     <div class="materials-tip">
                         <p><span class="tip-icon">💡</span> <strong>Совет:</strong> Все материалы можно приобрести в магазинах для рукоделия или заказать онлайн. Список с рекомендациями доступен после покупки мастер-класса.</p>
                     </div>
                 </section>
+                @endif
 
                 <!-- Other Classes by Author -->
+                @if($authorClasses->count() > 0)
                 <section class="author-classes">
                     <h2>Другие мастер-классы автора</h2>
                     <div class="author-classes-grid">
-                        <a href="#" class="author-class-card">
+                        @foreach($authorClasses as $class)
+                        <a href="{{ route('masterclass.show', $class->id) }}" class="author-class-card">
                             <div class="class-image">
-                                <img src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=300&h=200&fit=crop" alt="Варежки с узором">
+                                @if($class->mainImage)
+                                    <x-product-image :src="$class->mainImage->getThumbnailUrl('medium')" :alt="$class->title" style="width: 100%; height: 100%; object-fit: cover;" />
+                                @else
+                                    <x-product-image src="placeholder:lottie" :alt="$class->title" style="width: 100%; height: 100%;" />
+                                @endif
                             </div>
                             <div class="class-info">
-                                <h3>Варежки с узором</h3>
-                                <p class="price">350 ₽</p>
+                                <h3>{{ $class->title }}</h3>
+                                @if($class->activePrice)
+                                <p class="price">{{ number_format($class->activePrice->price, 0, ',', ' ') }} ₽</p>
+                                @endif
                             </div>
                         </a>
-                        <a href="#" class="author-class-card">
-                            <div class="class-image">
-                                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=200&fit=crop" alt="Шапка с помпоном">
-                            </div>
-                            <div class="class-info">
-                                <h3>Шапка с помпоном</h3>
-                                <p class="price">450 ₽</p>
-                            </div>
-                        </a>
-                        <a href="#" class="author-class-card">
-                            <div class="class-image">
-                                <img src="https://images.unsplash.com/photo-1558618047-f4b511ab5f6d?w=300&h=200&fit=crop" alt="Снуд в два оборота">
-                            </div>
-                            <div class="class-info">
-                                <h3>Снуд в два оборота</h3>
-                                <p class="price">280 ₽</p>
-                            </div>
-                        </a>
-                        <a href="#" class="author-class-card">
-                            <div class="class-image">
-                                <img src="https://images.unsplash.com/photo-1582131503261-fca1d1c0589f?w=300&h=200&fit=crop" alt="Детские пинетки">
-                            </div>
-                            <div class="class-info">
-                                <h3>Детские пинетки</h3>
-                                <p class="price">250 ₽</p>
-                            </div>
-                        </a>
+                        @endforeach
                     </div>
                 </section>
+                @endif
 
                 <!-- Reviews -->
                 <section class="masterclass-reviews">
                     <div class="reviews-header">
                         <h2>Отзывы о мастер-классе</h2>
                         <div class="reviews-rating">
-                            <span class="rating-value">4.9</span>
+                            <span class="rating-value">{{ number_format($product->rating, 1) }}</span>
                             <div class="stars">
+                                @for($i = 1; $i <= 5; $i++)
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                                 </svg>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
+                                @endfor
                             </div>
-                            <span class="reviews-count">146 отзывов</span>
+                            <span class="reviews-count">{{ $product->reviews_count }} {{ trans_choice('отзыв|отзыва|отзывов', $product->reviews_count) }}</span>
                         </div>
                     </div>
 
                     <div class="reviews-list">
+                        @foreach($product->reviews as $review)
                         <div class="review-card">
                             <div class="review-header">
-                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&h=48&fit=crop&crop=face" alt="Елена К." class="review-avatar">
+                                <img src="{{ $review->user->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($review->user->first_name) }}" alt="{{ $review->user->first_name }}" class="review-avatar">
                                 <div class="review-author">
-                                    <h4>Елена К.</h4>
+                                    <h4>{{ $review->user->first_name }} {{ mb_substr($review->user->last_name, 0, 1) }}.</h4>
                                     <div class="review-stars">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        @for($i = 1; $i <= 5; $i++)
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ $i <= $review->rating ? 'currentColor' : 'none' }}" stroke="currentColor">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-width="{{ $i <= $review->rating ? 0 : 2 }}"/>
                                         </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
+                                        @endfor
                                     </div>
                                 </div>
-                                <span class="review-date">15 января</span>
+                                <span class="review-date">{{ $review->created_at->diffForHumans() }}</span>
                             </div>
-                            <p class="review-text">Отличный мастер-класс! Всё очень подробно объяснено, даже я, новичок в вязании, смогла связать свои первые носки. Спасибо мастеру!</p>
+                            <p class="review-text">{{ $review->review_text }}</p>
                         </div>
-
-                        <div class="review-card">
-                            <div class="review-header">
-                                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=48&h=48&fit=crop&crop=face" alt="Анна М." class="review-avatar">
-                                <div class="review-author">
-                                    <h4>Анна М.</h4>
-                                    <div class="review-stars">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                    </div>
-                                </div>
-                                <span class="review-date">10 января</span>
-                            </div>
-                            <p class="review-text">Прекрасная инструкция, много фотографий. Пятку освоила с первого раза благодаря понятным схемам.</p>
-                        </div>
-
-                        <div class="review-card">
-                            <div class="review-header">
-                                <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=48&h=48&fit=crop&crop=face" alt="Ольга В." class="review-avatar">
-                                <div class="review-author">
-                                    <h4>Ольга В.</h4>
-                                    <div class="review-stars">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-width="2"/>
-                                        </svg>
-                                    </div>
-                                </div>
-                                <span class="review-date">5 января</span>
-                            </div>
-                            <p class="review-text">Хороший мастер-класс, всё понятно. Немного не хватило информации о выборе пряжи, но в целом довольна.</p>
-                        </div>
+                        @endforeach
                     </div>
 
+                    @if($product->reviews_count > 5)
                     <button class="btn-show-more">Показать ещё</button>
+                    @endif
                     <button class="btn btn-primary btn-leave-review">Оставить отзыв</button>
                 </section>
 
                 <!-- Similar Classes -->
+                @if($similarClasses->count() > 0)
                 <section class="similar-classes">
                     <h2>Похожие мастер-классы</h2>
                     <div class="similar-classes-grid">
-                        <a href="#" class="class-card">
+                        @foreach($similarClasses as $similar)
+                        <a href="{{ route('masterclass.show', $similar->id) }}" class="class-card">
                             <div class="class-card-image">
-                                <img src="https://images.unsplash.com/photo-1582131503261-fca1d1c0589f?w=400&h=300&fit=crop" alt="Вязаный плед">
+                                @if($similar->mainImage)
+                                    <x-product-image :src="$similar->mainImage->getThumbnailUrl('medium')" :alt="$similar->title" style="width: 100%; height: 100%; object-fit: cover;" />
+                                @else
+                                    <x-product-image src="placeholder:lottie" :alt="$similar->title" style="width: 100%; height: 100%;" />
+                                @endif
                             </div>
                             <div class="class-card-content">
-                                <h3>Вязаный плед для дома: узор «косы»</h3>
+                                <h3>{{ $similar->title }}</h3>
                                 <div class="class-card-author">
-                                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=24&h=24&fit=crop&crop=face" alt="Анна Смирнова">
-                                    <span>Анна Смирнова</span>
+                                    <img src="{{ $similar->author->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($similar->author->display_name) }}" alt="{{ $similar->author->display_name }}">
+                                    <span>{{ $similar->author->display_name }}</span>
                                 </div>
                                 <div class="class-card-meta">
-                                    <span class="price">650 ₽</span>
+                                    @if($similar->activePrice)
+                                    <span class="price">{{ number_format($similar->activePrice->price, 0, ',', ' ') }} ₽</span>
+                                    @endif
+                                    @if($similar->rating > 0)
                                     <div class="rating">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                                         </svg>
-                                        <span>4.8 (89)</span>
+                                        <span>{{ number_format($similar->rating, 1) }} ({{ $similar->reviews_count }})</span>
                                     </div>
+                                    @endif
                                 </div>
                             </div>
                         </a>
-                        <a href="#" class="class-card">
-                            <div class="class-card-image">
-                                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=300&fit=crop" alt="Свитер оверсайз">
-                            </div>
-                            <div class="class-card-content">
-                                <h3>Свитер оверсайз: от замера до готового изделия</h3>
-                                <div class="class-card-author">
-                                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=24&h=24&fit=crop&crop=face" alt="Екатерина Петрова">
-                                    <span>Екатерина Петрова</span>
-                                </div>
-                                <div class="class-card-meta">
-                                    <span class="price">890 ₽</span>
-                                    <div class="rating">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <span>5.0 (203)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="#" class="class-card">
-                            <div class="class-card-image">
-                                <img src="https://images.unsplash.com/photo-1558618047-f4b511ab5f6d?w=400&h=300&fit=crop" alt="Детский комбинезон">
-                            </div>
-                            <div class="class-card-content">
-                                <h3>Детский комбинезон спицами</h3>
-                                <div class="class-card-author">
-                                    <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=24&h=24&fit=crop&crop=face" alt="Мария Иванова">
-                                    <span>Мария Иванова</span>
-                                </div>
-                                <div class="class-card-meta">
-                                    <span class="price">520 ₽</span>
-                                    <div class="rating">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <span>4.9 (67)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="#" class="class-card">
-                            <div class="class-card-image">
-                                <img src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400&h=300&fit=crop" alt="Ажурная шаль">
-                            </div>
-                            <div class="class-card-content">
-                                <h3>Ажурная шаль для начинающих</h3>
-                                <div class="class-card-author">
-                                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=24&h=24&fit=crop&crop=face" alt="Ольга Козлова">
-                                    <span>Ольга Козлова</span>
-                                </div>
-                                <div class="class-card-meta">
-                                    <span class="price">380 ₽</span>
-                                    <div class="rating">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        <span>4.7 (112)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
+                        @endforeach
                     </div>
                 </section>
+                @endif
             </div>
 
             <!-- Right Column: Purchase Card -->
             <aside class="purchase-card">
                 <div class="purchase-card-sticky">
                     <!-- Title -->
-                    <h1 class="purchase-title">Уютные домашние носки спицами: пошаговый мастер-класс</h1>
+                    <h1 class="purchase-title">{{ $product->title }}</h1>
                     
                     <!-- Rating -->
                     <div class="purchase-rating">
                         <div class="stars">
+                            @for($i = 1; $i <= 5; $i++)
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                             </svg>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
+                            @endfor
                         </div>
-                        <span class="rating-value">5.0</span>
-                        <span class="rating-count">· 146 отзывов</span>
+                        <span class="rating-value">{{ number_format($product->rating, 1) }}</span>
+                        <span class="rating-count">· {{ $product->reviews_count }} {{ trans_choice('отзыв|отзыва|отзывов', $product->reviews_count) }}</span>
                     </div>
 
-                    <p class="Научите">Научитесь вязать тёплые и красивые носки для себя и близких. Подходит для начинающих.</p>
+                    <p class="Научите">{{ $product->short_description ?? Str::limit($product->description, 100) }}</p>
 
                     <!-- Difficulty Level -->
+                    @if($product->difficultyLevel)
                     <div class="difficulty-level">
                         <div class="difficulty-header">
                             <div class="difficulty-title">                                
                                 <span>Уровень сложности</span>
                             </div>
-                            <span class="difficulty-badge">Средний</span>
+                            <span class="difficulty-badge">{{ $product->difficultyLevel->name }}</span>
                         </div>
                         <div class="difficulty-progress">
-                            <div class="difficulty-bar active"></div>
-                            <div class="difficulty-bar active"></div>
-                            <div class="difficulty-bar active"></div>
-                            <div class="difficulty-bar"></div>
-                            <div class="difficulty-bar"></div>
+                            @php
+                                $levelMap = ['beginner' => 1, 'intermediate' => 3, 'advanced' => 5];
+                                $activeLevel = $levelMap[$product->difficultyLevel->slug] ?? 3;
+                            @endphp
+                            @for($i = 1; $i <= 5; $i++)
+                                <div class="difficulty-bar {{ $i <= $activeLevel ? 'active' : '' }}"></div>
+                            @endfor
                         </div>
-                        <p class="difficulty-description">Для тех, кто уже имеет базовый опыт в рукоделии</p>
+                        <p class="difficulty-description">{{ $product->difficultyLevel->description ?? 'Для тех, кто уже имеет базовый опыт в рукоделии' }}</p>
                     </div>
+                    @endif
 
                     <!-- Author -->
+                    @if($product->author)
                     <div class="purchase-author">
-                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face" alt="Мария Иванова" class="author-avatar">
+                        <img src="{{ $product->author->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($product->author->display_name) }}" alt="{{ $product->author->display_name }}" class="author-avatar">
                         <div class="author-info">
-                            <h3>Мария Иванова</h3>
+                            <h3>{{ $product->author->display_name }}</h3>
                             <div class="author-badges">
+                                @if($product->author->is_verified)
                                 <span class="badge badge-top">Топ-мастер</span>
+                                @endif
                                 <span class="badge">Мастер</span>
                             </div>
                         </div>
                     </div>
+                    @endif
 
                     <!-- Price -->
+                    @if($product->activePrice)
                     <div class="purchase-price">
-                        <div class="price-current">400 ₽</div>
-                        <div class="price-old">550 ₽</div>
-                        <div class="price-discount">-27%</div>
+                        <div class="price-current">{{ number_format($product->activePrice->price, 0, ',', ' ') }} ₽</div>
+                        @if($product->activePrice->old_price)
+                            @php
+                                $discount = round((($product->activePrice->old_price - $product->activePrice->price) / $product->activePrice->old_price) * 100);
+                            @endphp
+                            <div class="price-old">{{ number_format($product->activePrice->old_price, 0, ',', ' ') }} ₽</div>
+                            <div class="price-discount">-{{ $discount }}%</div>
+                        @endif
                     </div>
+                    @endif
 
-                    <p class="purchase-format">Цифровой мастер-класс (PDF), мгновенная загрузка</p>
+                    <p class="purchase-format">{{ $product->product_format ?? 'Цифровой мастер-класс (PDF), мгновенная загрузка' }}</p>
 
                     <!-- Buttons -->
                     <button class="btn btn-primary">Купить в 1 клик</button>

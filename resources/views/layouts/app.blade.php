@@ -10,6 +10,9 @@
     <!-- Styles -->
     @vite(['resources/css/front/app.css', 'resources/js/front/app.js'])
     
+    <!-- Lottie Player -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest"></script>
+    
     @stack('styles')
 </head>
 <body>

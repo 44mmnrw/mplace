@@ -1,6 +1,10 @@
 {
+  "_bootstrap-DIuewKhF.js": {
+    "file": "assets/bootstrap-DIuewKhF.js",
+    "name": "bootstrap"
+  },
   "resources/css/author/app.css": {
-    "file": "assets/app-DHXE2puu.css",
+    "file": "assets/app-DY4b1zOK.css",
     "src": "resources/css/author/app.css",
     "isEntry": true,
     "name": "app",
@@ -18,22 +22,25 @@
     ]
   },
   "resources/css/front/app.css": {
-    "file": "assets/app-cBxrKwmL.css",
+    "file": "assets/app-C-mskGd0.css",
     "src": "resources/css/front/app.css"
   },
   "resources/js/author/app.js": {
-    "file": "assets/app-DEKyLkW7.js",
+    "file": "assets/app-CbG_B040.js",
     "name": "app",
     "src": "resources/js/author/app.js",
     "isEntry": true,
     "imports": [
-      "resources/js/front/app.js"
+      "_bootstrap-DIuewKhF.js"
     ]
   },
   "resources/js/front/app.js": {
-    "file": "assets/app-DIuewKhF.js",
+    "file": "assets/app-Dht31p5j.js",
     "name": "app",
     "src": "resources/js/front/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_bootstrap-DIuewKhF.js"
+    ]
   }
 }

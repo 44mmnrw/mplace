@@ -67,54 +67,64 @@
                 </a>
             </div>
             <div class="class-cards-grid">
-                <!-- Class Card 1 -->
-                <a href="#" class="class-card">
-                    <div class="class-card-image">
-                        <img src="https://via.placeholder.com/356x267" alt="Вяжем плюшевого мишку амигуруми">
+                @forelse($popularClasses as $product)
+                <a href="{{ route('masterclass.show', $product->id) }}" class="class-card">
+                    <div class="class-card-image" style="position: relative; width: 100%; aspect-ratio: 4/3; overflow: hidden; background: #edf2f5;">
+                        @if($product->mainImage)
+                            <x-product-image :src="$product->mainImage->image_url" :alt="$product->title" style="width: 100%; height: 100%; object-fit: cover;" />
+                        @else
+                            <x-product-image src="placeholder:lottie" :alt="$product->title" style="width: 100%; height: 100%;" />
+                        @endif
                         <div class="class-card-badges">
-                            <span class="badge badge-hit">Хит</span>
-                            <span class="badge badge-discount">−40%</span>
+                            @if($product->activePrice && $product->activePrice->old_price)
+                                @php
+                                    $discount = round((($product->activePrice->old_price - $product->activePrice->price) / $product->activePrice->old_price) * 100);
+                                @endphp
+                                <span class="badge badge-discount">−{{ $discount }}%</span>
+                            @endif
                         </div>
                     </div>
                     <div class="class-card-content">
                         <div class="class-card-author">
-                            <img src="https://via.placeholder.com/24" alt="Мария Ковалёва" class="author-avatar">
-                            <span class="author-name">Мария Ковалёва</span>
+                            <span class="author-name">{{ $product->author->name ?? 'Автор' }}</span>
                         </div>
-                        <h3 class="class-card-title">Вяжем плюшевого мишку амигуруми</h3>
+                        <h3 class="class-card-title">{{ $product->title }}</h3>
                         <div class="class-card-meta">
-                            <span class="meta-item">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
-                                    <path d="M7 3.5V7h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                </svg>
-                                4 часа
-                            </span>
+                            @if($product->difficultyLevel)
                             <span class="meta-item">
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                     <path d="M7 1v12M13 7H1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
-                                Для новичков
+                                {{ $product->difficultyLevel->name }}
                             </span>
+                            @endif
                         </div>
                         <div class="class-card-footer">
+                            @if($product->rating > 0)
                             <div class="class-card-rating">
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                     <path d="M8 1l2 5h5l-4 3 2 5-5-3-5 3 2-5-4-3h5l2-5z" fill="#FFC107"/>
                                 </svg>
-                                <span class="rating-value">4.9</span>
-                                <span class="rating-count">(234)</span>
+                                <span class="rating-value">{{ number_format($product->rating, 1) }}</span>
+                                <span class="rating-count">({{ $product->reviews_count }})</span>
                             </div>
+                            @endif
+                            @if($product->activePrice)
                             <div class="class-card-price">
-                                <span class="price-old">1490 ₽</span>
-                                <span class="price-current">890 ₽</span>
+                                @if($product->activePrice->old_price)
+                                    <span class="price-old">{{ number_format($product->activePrice->old_price, 0, ',', ' ') }} ₽</span>
+                                @endif
+                                <span class="price-current">{{ number_format($product->activePrice->price, 0, ',', ' ') }} ₽</span>
                             </div>
-                        </div>
-                        <div class="class-card-badge">
-                            <span class="badge badge-feedback">С обратной связью</span>
+                            @endif
                         </div>
                     </div>
                 </a>
+                @empty
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px;">
+                    <p style="color: #7A726D;">Пока нет опубликованных мастер-классов</p>
+                </div>
+                @endforelse
             </div>
         </div>
     </section>

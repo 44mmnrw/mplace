@@ -12,12 +12,13 @@ set SERVER=212.113.120.197
 set USER=moonny_art_usr
 set REMOTE_PATH=/var/www/moonny_art_usr/data/www/moonny.art
 set PHP=/opt/php83/bin/php
+set BRANCH=main
 
 REM Получение текущей даты и времени
 for /f "tokens=*" %%i in ('powershell -Command "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"') do set DATETIME=%%i
 
 REM Сборка фронтенда локально
-echo [0/8] Сборка фронтенда (production)...
+echo [0/10] Сборка фронтенда (production)...
 call npm run build
 if %errorlevel% neq 0 (
     echo Ошибка: не удалось собрать фронтенд
@@ -27,26 +28,28 @@ echo OK
 echo.
 
 REM Коммит изменений
-echo [1/8] Коммит изменений в Git...
-git add .
-git add -f public/build
-git commit -m "Dev Deploy %DATETIME%"
-if %errorlevel% equ 0 (
-    echo Коммит создан: Dev Deploy %DATETIME%
-) else (
-    echo Нет изменений для коммита или ошибка
-)
-git push origin dev
+echo [1/10] Коммит изменений в Git...
+git add -A
+git commit -m "Deploy %DATETIME%" --allow-empty
 if %errorlevel% neq 0 (
-    echo ВНИМАНИЕ: Ошибка при push в репозиторий
-    echo Продолжить деплой? (Ctrl+C для отмены)
-    pause
+    echo Ошибка при коммите
+    exit /b 1
+)
+echo OK
+echo.
+
+REM Push в репозиторий
+echo [2/10] Push в репозиторий ветка '%BRANCH%'...
+git push origin %BRANCH%
+if %errorlevel% neq 0 (
+    echo Ошибка при push в репозиторий
+    exit /b 1
 )
 echo OK
 echo.
 
 REM Проверка подключения
-echo [2/8] Проверка SSH подключения...
+echo [3/10] Проверка SSH подключения...
 ssh %USER%@%SERVER% "echo 'SSH OK'"
 if %errorlevel% neq 0 (
     echo Ошибка: не удалось подключиться к серверу
@@ -55,15 +58,15 @@ if %errorlevel% neq 0 (
 echo OK
 echo.
 
-REM Резервная копия текущего index.php
-echo [3/8] Создание резервной копии...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && cp public/index.php public/index.php.backup.$(date +%%Y%%m%%d_%%H%%M%%S) 2>/dev/null || true"
+REM Резервная копия текущего состояния
+echo [4/10] Создание резервной копии...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && cp -r . ../moonny.art.backup.$(date +%%Y%%m%%d_%%H%%M%%S) 2>/dev/null || true && echo 'Backup created'"
 echo OK
 echo.
 
 REM Загрузка проекта через Git pull
-echo [4/8] Обновление кода на сервере через Git...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && git pull origin dev"
+echo [5/10] Обновление кода на сервере через Git (ветка %BRANCH%)...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && git fetch origin && git checkout %BRANCH% && git pull origin %BRANCH% --ff-only"
 if %errorlevel% neq 0 (
     echo Ошибка: не удалось обновить код через Git
     exit /b 1
@@ -72,26 +75,39 @@ echo OK
 echo.
 
 REM Установка зависимостей
-echo [5/8] Установка зависимостей через Composer...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% /usr/local/bin/composer install --no-dev --optimize-autoloader"
+echo [6/10] Установка зависимостей через Composer...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
+if %errorlevel% neq 0 (
+    echo Ошибка: не удалось установить зависимостей Composer
+    exit /b 1
+)
 echo OK
 echo.
 
 REM Настройка прав доступа
-echo [6/8] Настройка прав доступа...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && chmod -R 755 storage bootstrap/cache"
+echo [7/10] Настройка прав доступа...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && chmod -R 755 storage bootstrap/cache public/storage && chown -R moonny_art_usr:moonny_art_usr . 2>/dev/null || true"
 echo OK
 echo.
 
-REM Создание символической ссылки storage
-echo [7/8] Создание символической ссылки для storage...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan storage:link --force 2>/dev/null || echo 'Storage link уже существует'"
+REM Очистка кэша ДО миграций
+echo [8/10] Очистка кэша конфигурации...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan config:clear && %PHP% artisan cache:clear && %PHP% artisan view:clear"
 echo OK
 echo.
 
-REM Проверка конфигурации Laravel и очистка кэша
-echo [8/8] Очистка кэша и проверка конфигурации...
-ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan config:cache && %PHP% artisan route:cache && %PHP% artisan view:cache && %PHP% artisan --version"
+REM Запуск миграций
+echo [9/10] Запуск миграций БД...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan migrate --force"
+if %errorlevel% neq 0 (
+    echo ВНИМАНИЕ: Ошибка при запуске миграций (может быть уже выполнены)
+)
+echo OK
+echo.
+
+REM Создание символической ссылки storage и кэширование конфигурации
+echo [10/10] Финализация (storage link, кэширование)...
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan storage:link --force 2>/dev/null && %PHP% artisan config:cache && %PHP% artisan route:cache && %PHP% artisan view:cache && %PHP% artisan --version"
 echo OK
 echo.
 
@@ -100,6 +116,10 @@ echo Развертывание завершено!
 echo ================================
 echo.
 echo Проект успешно развернут на https://moonny.art
+echo Ветка: %BRANCH%
 echo Время деплоя: %DATETIME%
+echo.
+echo Проверка статуса на сервере:
+ssh %USER%@%SERVER% "cd %REMOTE_PATH% && %PHP% artisan about"
 echo.
 pause

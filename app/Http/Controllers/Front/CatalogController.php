@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\DifficultyLevel;
 use Illuminate\Http\Request;
 
 class CatalogController extends Controller
@@ -12,16 +15,64 @@ class CatalogController extends Controller
      */
     public function index(Request $request)
     {
-        // TODO: Добавить логику фильтрации когда будут созданы модели
-        // Пример будущей реализации:
-        // $classes = MasterClass::query()
-        //     ->when($request->level, fn($q) => $q->whereIn('level', $request->level))
-        //     ->when($request->format, fn($q) => $q->whereIn('format', $request->format))
-        //     ->when($request->theme, fn($q) => $q->whereIn('theme', $request->theme))
-        //     ->when($request->price_min, fn($q) => $q->where('price', '>=', $request->price_min))
-        //     ->when($request->price_max, fn($q) => $q->where('price', '<=', $request->price_max))
-        //     ->paginate(12);
-        
-        return view('front.catalog');
+        $query = Product::query()
+            ->where('status', 'published')
+            ->with(['author', 'mainImage', 'primaryCategory', 'activePrice', 'difficultyLevel']);
+
+        // Фильтр по уровню сложности
+        if ($request->has('level') && is_array($request->level)) {
+            $query->whereHas('difficultyLevel', function($q) use ($request) {
+                $q->whereIn('slug', $request->level);
+            });
+        }
+
+        // Фильтр по категории
+        if ($request->has('category')) {
+            $query->where('primary_category_id', $request->category);
+        }
+
+        // Фильтр по цене
+        if ($request->has('price_min')) {
+            $query->whereHas('activePrice', function($q) use ($request) {
+                $q->where('price', '>=', $request->price_min);
+            });
+        }
+        if ($request->has('price_max')) {
+            $query->whereHas('activePrice', function($q) use ($request) {
+                $q->where('price', '<=', $request->price_max);
+            });
+        }
+
+        // Фильтр по скидке
+        if ($request->has('discount') && $request->discount === 'yes') {
+            $query->whereHas('activePrice', function($q) {
+                $q->whereNotNull('old_price');
+            });
+        }
+
+        // Сортировка
+        $sortBy = $request->get('sort', 'popular');
+        switch ($sortBy) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'rating':
+                $query->orderBy('rating', 'desc');
+                break;
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            default: // popular
+                $query->orderBy('sales_count', 'desc');
+        }
+
+        $products = $query->paginate(12);
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $difficultyLevels = DifficultyLevel::orderBy('sort_order')->get();
+
+        return view('front.catalog', compact('products', 'categories', 'difficultyLevels'));
     }
 }

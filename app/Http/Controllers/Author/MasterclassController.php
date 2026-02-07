@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Services\SkuGeneratorService;
+use App\Services\ImageThumbnailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -17,8 +18,9 @@ class MasterclassController extends Controller
      */
     public function index()
     {
-        // TODO: Получить реальный author_id из аутентифицированного пользователя
-        $authorId = 1;
+        // Get author_id from authenticated user
+        // TODO: Replace with proper auth middleware when authentication is implemented
+        $authorId = $this->getAuthorId();
 
         // Get products for this author
         $products = Product::where('author_id', $authorId)
@@ -70,8 +72,8 @@ class MasterclassController extends Controller
             'gallery_images.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
-        // TODO: Get actual author_id from authenticated user
-        $authorId = 1;
+        // Get author_id from authenticated user
+        $authorId = $this->getAuthorId();
 
         // Generate SKU
         $skuGenerator = new SkuGeneratorService();
@@ -105,27 +107,39 @@ class MasterclassController extends Controller
             'is_active' => true,
         ]);
 
-        // Handle main image upload
+        // Handle main image upload with thumbnails
         if ($request->hasFile('main_image')) {
-            $mainImage = $request->file('main_image');
-            $mainImagePath = $mainImage->store('products/images', 'public');
+            $imageService = new ImageThumbnailService();
+            $paths = $imageService->uploadAndCreateThumbnails(
+                $request->file('main_image'),
+                "products/images/{$product->id}/" . now()->format('Y-m')
+            );
             
             $product->images()->create([
-                'image_path' => $mainImagePath,
+                'image_path' => $paths['original'],
                 'is_main' => true,
                 'sort_order' => 0,
             ]);
         }
 
-        // Handle gallery images upload
+        // Handle gallery images upload with thumbnails
         if ($request->hasFile('gallery_images')) {
+            $imageService = new ImageThumbnailService();
+            $hasMainImage = $request->hasFile('main_image');
+            
             foreach ($request->file('gallery_images') as $index => $image) {
-                $imagePath = $image->store('products/images', 'public');
+                $paths = $imageService->uploadAndCreateThumbnails(
+                    $image,
+                    "products/images/{$product->id}/" . now()->format('Y-m')
+                );
+                
+                // Если главного изображения нет, первое из галереи становится главным
+                $isMain = !$hasMainImage && $index === 0;
                 
                 $product->images()->create([
-                    'image_path' => $imagePath,
-                    'is_main' => false,
-                    'sort_order' => $index + 1,
+                    'image_path' => $paths['original'],
+                    'is_main' => $isMain,
+                    'sort_order' => $isMain ? 0 : $index + 1,
                 ]);
             }
         }
@@ -225,34 +239,36 @@ class MasterclassController extends Controller
             ]);
         }
 
-        // Handle image deletions
+        // Handle image deletions with thumbnails
         if (!empty($validated['delete_images'])) {
+            $imageService = new ImageThumbnailService();
             $imagesToDelete = $product->images()->whereIn('id', $validated['delete_images'])->get();
             foreach ($imagesToDelete as $image) {
-                // Delete file from storage
-                if (\Storage::disk('public')->exists($image->image_path)) {
-                    \Storage::disk('public')->delete($image->image_path);
-                }
+                // Delete file and all thumbnails
+                $imageService->deleteWithThumbnails($image->image_path);
                 $image->delete();
             }
         }
 
         // Handle new main image upload
         if ($request->hasFile('main_image')) {
+            $imageService = new ImageThumbnailService();
+            
             // Delete old main image if exists
             $oldMainImage = $product->mainImage;
             if ($oldMainImage) {
-                if (\Storage::disk('public')->exists($oldMainImage->image_path)) {
-                    \Storage::disk('public')->delete($oldMainImage->image_path);
-                }
+                $imageService->deleteWithThumbnails($oldMainImage->image_path);
                 $oldMainImage->delete();
             }
             
-            $mainImage = $request->file('main_image');
-            $mainImagePath = $mainImage->store('products/images', 'public');
+            // Upload new main image with thumbnails
+            $paths = $imageService->uploadAndCreateThumbnails(
+                $request->file('main_image'),
+                "products/images/{$product->id}/" . now()->format('Y-m')
+            );
             
             $product->images()->create([
-                'image_path' => $mainImagePath,
+                'image_path' => $paths['original'],
                 'is_main' => true,
                 'sort_order' => 0,
             ]);
@@ -260,15 +276,23 @@ class MasterclassController extends Controller
 
         // Handle new gallery images upload
         if ($request->hasFile('gallery_images')) {
+            $imageService = new ImageThumbnailService();
             $currentMaxOrder = $product->images()->where('is_main', false)->max('sort_order') ?? 0;
+            $hasMainImage = $product->mainImage()->exists() || $request->hasFile('main_image');
             
             foreach ($request->file('gallery_images') as $index => $image) {
-                $imagePath = $image->store('products/images', 'public');
+                $paths = $imageService->uploadAndCreateThumbnails(
+                    $image,
+                    "products/images/{$product->id}/" . now()->format('Y-m')
+                );
+                
+                // Если главного изображения нет, первое из галереи становится главным
+                $isMain = !$hasMainImage && $index === 0;
                 
                 $product->images()->create([
-                    'image_path' => $imagePath,
-                    'is_main' => false,
-                    'sort_order' => $currentMaxOrder + $index + 1,
+                    'image_path' => $paths['original'],
+                    'is_main' => $isMain,
+                    'sort_order' => $isMain ? 0 : $currentMaxOrder + $index + 1,
                 ]);
             }
         }
@@ -332,5 +356,15 @@ class MasterclassController extends Controller
         return redirect()
             ->route('author.masterclasses.index')
             ->with('success', 'Мастер-класс успешно удален!');
+    }
+
+    /**
+     * Get author ID from authenticated user or fallback for development
+     * 
+     * @return int
+     */
+    private function getAuthorId(): int
+    {
+        return auth()->user()->author->id;
     }
 }
